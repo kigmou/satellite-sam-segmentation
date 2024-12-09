@@ -1,0 +1,9 @@
+     segment-anything
+     rasterio
+     geopandas
+     numpy
+     torch
+     opencv-python
+     shapely
+     tqdm
+     matplotlib
