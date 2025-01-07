@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Models
+models/*.pth
+
+# IDEs
+.idea/
+.vscode/
+
+# OS
+.DS_Store
