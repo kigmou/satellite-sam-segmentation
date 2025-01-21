@@ -10,12 +10,11 @@ def get_pixel_area(tile_path, quarters):
       # Get pixel area from any available quarter's B02.tif
     pixel_area = None
     for quarter in quarters:
-        b02_path = f"{tile_path}/Sentinel-2_mosaic_2022_Q{quarter}_{os.path.basename(tile_path)}_0_0/B02.tif"
+        b02_path = os.path.join(tile_path, f"Sentinel-2_mosaic_2022_Q{quarter}_{os.path.basename(tile_path)}_0_0", "B02.tif")
         if os.path.exists(b02_path):
             with rasterio.open(b02_path) as src:
                 transform = src.transform
                 return abs(transform[0] * transform[4])
-            
     return None
 
 
@@ -93,28 +92,36 @@ def create_intersection_gdf(filtered_gdf):
     
     return intersection_gdf
 
-def merge_overlapping_segments(tile_path, quarters):
+def merge_overlapping_segments(tile_path, quarters, color_type='nrg', grid_size=10):
     """
     Merge quarterly polygons for a single tile from a list of quarters.
     
     Args:
         tile_path: Full path to the tile directory
         quarters: List of quarters to process
+        color_type: Either 'rgb' for true color or 'nrg' for NIR-Red-Green
+        grid_size: Grid size used for tiling (default: 10)
     """
     tile_id = os.path.basename(tile_path)
     print(f"\nProcessing tile {tile_id} for quarters: {quarters}")
     
-
-    
-    # Get pixel area from any available quarter's B02.tif
     pixel_area = get_pixel_area(tile_path, quarters)
     
     if pixel_area is None:
         print(f"Could not find B02.tif for tile {tile_id}")
         return
     
-    # Load quarterly parquet files
-    geodfs = [gpd.read_parquet(f"{tile_path}/Sentinel-2_mosaic_2022_Q{quarter}_{tile_id}_0_0/polygons.parquet").to_crs("EPSG:32632") for quarter in quarters]
+    # Load quarterly parquet files with new path structure
+    geodfs = []
+    for quarter in quarters:
+        quarter_path = os.path.join(
+            tile_path, 
+            f"Sentinel-2_mosaic_2022_Q{quarter}_{tile_id}_0_0",
+            color_type,
+            f"polygons_{grid_size}x{grid_size}.parquet"
+        )
+        if os.path.exists(quarter_path):
+            geodfs.append(gpd.read_parquet(quarter_path).to_crs("EPSG:32632"))
     
     if not geodfs:
         print(f"No parquet files found for tile {tile_id}")
@@ -137,20 +144,23 @@ def merge_overlapping_segments(tile_path, quarters):
     # Create result GeoDataFrame using the new function
     intersection_gdf = create_intersection_gdf(filtered_gdf)
     
-        # Create merge directory
-    merge_path = os.path.join(tile_path, "intersection_polygons")
+    # Create merge directory in color-specific folder
+    merge_path = os.path.join(tile_path, color_type, "intersection_polygons")
     os.makedirs(merge_path, exist_ok=True)
     
     intersection_gdf.to_file(os.path.join(merge_path, f"{tile_id}_intersection.shp"))
     intersection_gdf.to_parquet(os.path.join(merge_path, f"{tile_id}_intersection.parquet"))
 
-def concat_polygons(tile_paths, polygons_name = "all_polygons"):
-    # Initialize list to store GeoDataFrames
+def concat_polygons(tile_paths, color_type='nrg', grid_size=10, polygons_name="all_polygons"):
     gdfs = []
 
-    # Load all parquet files
     for tile_path in tqdm(tile_paths, desc="Loading tiles"):
-        parquet_path = os.path.join(tile_path, "intersection_polygons", f"{os.path.basename(tile_path)}_intersection.shp")
+        parquet_path = os.path.join(
+            tile_path, 
+            color_type,
+            "intersection_polygons", 
+            f"{os.path.basename(tile_path)}_intersection.parquet"
+        )
         if os.path.exists(parquet_path):
             try:
                 gdf = gpd.read_parquet(parquet_path)
@@ -162,17 +172,19 @@ def concat_polygons(tile_paths, polygons_name = "all_polygons"):
             print(f"No parquet file found for {parquet_path}")
 
     if gdfs:
-        # Combine all GeoDataFrames
         combined_gdf = gpd.GeoDataFrame(pd.concat(gdfs, ignore_index=True))
         print(f"\nTotal number of polygons: {len(combined_gdf)}")
         
-        # Create output directory if it doesn't exist
-        output_dir = f"/home/teulade/images/Sentinel-2_mosaic_2022/{polygons_name}"
+        # Create output directory with color type and grid size info
+        output_dir = os.path.join(
+            "/home/teulade/images/Sentinel-2_mosaic_2022",
+            f"{polygons_name}_{color_type}_{grid_size}x{grid_size}"
+        )
         os.makedirs(output_dir, exist_ok=True)
         
         # Save combined results
-        combined_gdf.to_parquet(f"{output_dir}/{polygons_name}.parquet")
-        combined_gdf.to_file(f"{output_dir}/{polygons_name}.shp")
+        combined_gdf.to_parquet(os.path.join(output_dir, f"{polygons_name}.parquet"))
+        combined_gdf.to_file(os.path.join(output_dir, f"{polygons_name}.shp"))
         
         print(f"\nSaved merged files to {output_dir}")
     else:
