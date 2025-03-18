@@ -6,11 +6,11 @@ from tqdm import tqdm
 import os
 from shapely.validation import make_valid  # Add this import
 
-def get_pixel_area(tile_path, quarters):
-      # Get pixel area from any available quarter's B02.tif
+def get_pixel_area(tile_path, quarters, year):
+    # Get pixel area from any available quarter's B02.tif
     pixel_area = None
     for quarter in quarters:
-        b02_path = os.path.join(tile_path, f"Sentinel-2_mosaic_2022_Q{quarter}_{os.path.basename(tile_path)}_0_0", "B02.tif")
+        b02_path = os.path.join(tile_path, f"Sentinel-2_mosaic_{year}_Q{quarter}_{os.path.basename(tile_path)}_0_0", "B02.tif")
         if os.path.exists(b02_path):
             with rasterio.open(b02_path) as src:
                 transform = src.transform
@@ -92,20 +92,21 @@ def create_intersection_gdf(filtered_gdf):
     
     return intersection_gdf
 
-def merge_overlapping_segments(tile_path, quarters, color_type='nrg', grid_size=10):
+def merge_overlapping_segments(tile_path, quarters, year, color_type='nrg', grid_size=10):
     """
     Merge quarterly polygons for a single tile from a list of quarters.
     
     Args:
         tile_path: Full path to the tile directory
         quarters: List of quarters to process
+        year: Year of the Sentinel data (e.g., 2023)
         color_type: Either 'rgb' for true color or 'nrg' for NIR-Red-Green
         grid_size: Grid size used for tiling (default: 10)
     """
     tile_id = os.path.basename(tile_path)
     print(f"\nProcessing tile {tile_id} for quarters: {quarters}")
     
-    pixel_area = get_pixel_area(tile_path, quarters)
+    pixel_area = get_pixel_area(tile_path, quarters, year)
     
     if pixel_area is None:
         print(f"Could not find B02.tif for tile {tile_id}")
@@ -116,7 +117,7 @@ def merge_overlapping_segments(tile_path, quarters, color_type='nrg', grid_size=
     for quarter in quarters:
         quarter_path = os.path.join(
             tile_path, 
-            f"Sentinel-2_mosaic_2022_Q{quarter}_{tile_id}_0_0",
+            f"Sentinel-2_mosaic_{year}_Q{quarter}_{tile_id}_0_0",
             color_type,
             f"polygons_{grid_size}x{grid_size}.parquet"
         )
@@ -175,9 +176,9 @@ def concat_polygons(tile_paths, color_type='nrg', grid_size=10, polygons_name="a
         combined_gdf = gpd.GeoDataFrame(pd.concat(gdfs, ignore_index=True))
         print(f"\nTotal number of polygons: {len(combined_gdf)}")
         
-        # Create output directory with color type and grid size info
+        # Create output directory in the same location as the input tiles
         output_dir = os.path.join(
-            "/home/teulade/images/Sentinel-2_mosaic_2022",
+            os.path.dirname(tile_paths[0]),  # Use the parent directory of the first tile
             f"{polygons_name}_{color_type}_{grid_size}x{grid_size}"
         )
         os.makedirs(output_dir, exist_ok=True)

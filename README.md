@@ -1,82 +1,89 @@
-# Satellite Image Segmentation with SAM
+# Satellite SAM Segmentation
 
-## Overview
-This project implements an automated pipeline for segmenting Sentinel-2 satellite imagery using Meta's Segment Anything Model (SAM). It processes multiple satellite tiles across quarterly periods, generates segmentation masks, and merges the results into clean, georeferenced polygons.
+This project uses the Segment Anything Model (SAM) to segment satellite imagery from Sentinel products.
 
-## Features
-- Automated processing of Sentinel-2 satellite imagery
-- Multi-quarter image segmentation using SAM
-- Georeferenced polygon generation
-- Polygon merging with intersection handling
-- Support for batch processing multiple tiles
+## Setup
 
-## Prerequisites
-- CUDA-capable GPU
-- Python 3.8+
-- SAM checkpoint file (`sam_vit_h_4b8939.pth`)
+### 1. Environment Setup
 
-## Installation
+Create and activate a conda environment:
 
-1. Clone the repository:
 ```bash
-git clone https://github.com/teulade/satellite_segmentation.git
-cd satellite_segmentation
+conda create -n sentinel python=3.11
+conda activate sentinel
 ```
 
-2. Install the required dependencies:
+### 2. Install Dependencies
+
+Install the required packages using conda and pip:
+
+```bash
+# Install core dependencies via conda
+conda install -c conda-forge rasterio geopandas shapely tqdm matplotlib
+conda install pytorch torchvision -c pytorch
+
+# Install remaining dependencies via pip
+pip install segment-anything opencv-python pillow
+```
+
+Or install all dependencies at once using pip:
+
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Download the SAM checkpoint file and place it in the project root:
+### 3. Download SAM Model
+
+The project requires the SAM model checkpoint. Download it using:
+
 ```bash
-wget https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
+# Create models directory
+mkdir -p models
+
+# Download the SAM model checkpoint
+wget https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth -O models/sam_vit_h_4b8939.pth
 ```
+
+The model file is approximately 2.4GB.
 
 ## Usage
 
-### 1. Image Preparation
-Processes raw Sentinel-2 bands and prepares them for segmentation:
-```bash
-python sentinel_preprocessing.py
-```
-This step:
-- Reads bands B02, B03, B08
-- Creates RGB composites
-- Splits images into 10x10 grids
+The project provides scripts to process Sentinel satellite imagery:
 
-### 2. SAM Segmentation
-Runs the SAM model on prepared images:
-```bash
-python sam_satellite_processor.py
-```
-This step:
-- Processes each tile with SAM
-- Converts masks to georeferenced polygons
-- Saves results as quarterly parquet/shapefile
+1. Place your Sentinel product zip files in a directory (e.g., `/path/to/sentinel/products/`)
+2. Run the processing script:
 
-### 3. Polygon Merging
-Merges results from all quarters:
 ```bash
-python polygon_merger.py
+python scripts/process_sentinel_products.py
 ```
-This step:
-- Combines quarterly results
-- Filters small polygons (<100 pixels)
-- Handles overlapping segments
-- Generates final clean polygons
+
+The script will:
+1. Unzip all Sentinel product zip files
+2. Preprocess the imagery
+3. Run SAM segmentation
+4. Merge and concatenate the resulting polygons
 
 ## Project Structure
 
 ```
 satellite-sam-segmentation/
-│
-├── sam_satellite_processor.py    # Main SAM processing
-├── polygon_merger.py            # Merging quarterly results
-├── sentinel_preprocessing.py    # Image preparation
-├── requirements.txt            # Dependencies
-└── README.md                   # Documentation
+├── models/
+│   └── sam_vit_h_4b8939.pth    # SAM model checkpoint
+├── scripts/
+│   └── process_sentinel_products.py
+├── src/
+│   ├── sentinel_preprocessing.py
+│   ├── sam_satellite_processor.py
+│   └── polygon_merger.py
+└── requirements.txt
 ```
+
+## Notes
+
+- The SAM model checkpoint is required and must be placed in the `models/` directory
+- The script expects Sentinel product zip files in the specified input directory
+- Processing is done per tile and quarter
+- Results are saved in the same directory structure as the input
 
 ## Configuration
 
@@ -131,11 +138,6 @@ Typical processing metrics:
 - Input: 4 quarters × 100 tiles per quarter
 - Initial segments: ~192,328 total
 - Final output: ~60,607 clean polygons after merging
-
-## Notes
-- Ensure sufficient disk space for intermediate files
-- GPU memory requirements depend on image size
-- Processing time varies based on number of tiles and hardware
 
 ## License
 [Your chosen license]
