@@ -1,13 +1,18 @@
 import rasterio
 import numpy as np
-
 import cv2
 import os
+import sys
+import torch
 import geopandas as gpd
 from tqdm import tqdm
 
-from segment_anything import SamAutomaticMaskGenerator
+# Add local SAM to Python path
+sam_path = "/home/teulade/segment-anything"
+if sam_path not in sys.path:
+    sys.path.insert(0, sam_path)
 
+from segment_anything import SamAutomaticMaskGenerator
 from shapely.geometry import Polygon
 from pyproj import Transformer
 
@@ -122,6 +127,11 @@ def segment_satellite_imagery(sentinel_path, mask_generator: SamAutomaticMaskGen
             pbar.update(1)
     
     print(f"Found {len(georeferenced_polygons)} polygons for {color_dir}")
+    
+    # Before creating the GeoDataFrame, check if we have any polygons
+    if not georeferenced_polygons:
+        print(f"No polygons found for {color_dir}. Skipping GeoDataFrame creation.")
+        return
     
     # Create output directories
     shapefile_dir = os.path.join(color_dir, f"shapefiles_{grid_size}x{grid_size}")
