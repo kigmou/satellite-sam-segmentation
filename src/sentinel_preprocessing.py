@@ -3,9 +3,14 @@ from rasterio.windows import Window
 import numpy as np
 from segment_anything import SamPredictor, sam_model_registry
 import os
+import logging
 from tqdm import tqdm
 
-
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 def cumulative_count_cut(band, min_percentile=2, max_percentile=98):
     """Apply contrast enhancement stretch similar to QGIS"""
     new_band = band[band != 0]

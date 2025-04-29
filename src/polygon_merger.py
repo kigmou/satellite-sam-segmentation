@@ -7,6 +7,13 @@ import os
 import logging
 from shapely.validation import make_valid  # Add this import
 
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+
 def get_pixel_area(tile_path, quarters, year):
     # Get pixel area from any available quarter's B02.tif
     pixel_area = None

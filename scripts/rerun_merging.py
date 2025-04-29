@@ -14,6 +14,13 @@ sys.path.insert(0, project_root)
 
 from src.polygon_merger import merge_overlapping_segments
 
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+
 def rerun_merging(base_dir, year, color_type='nrg', grid_size=10, min_pixels=20):
     """
     Rerun the merging process with a new threshold and concatenate all polygons.
