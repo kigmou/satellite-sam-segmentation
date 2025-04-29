@@ -91,7 +91,7 @@ def create_intersection_gdf(filtered_gdf):
         crs=filtered_gdf.crs
     )
     
-    # logging.warning statistics
+    # Print statistics
     logging.info(f"\nStatistics:")
     logging.info(f"- Polygons without significant intersection: {count_no_intersection}")
     logging.info(f"- Polygons reduced to intersection (>25%): {count_intersection}")
