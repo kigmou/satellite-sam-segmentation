@@ -10,7 +10,11 @@ def get_pixel_area(tile_path, quarters, year):
     # Get pixel area from any available quarter's B02.tif
     pixel_area = None
     for quarter in quarters:
-        b02_path = "/home/teulade/dataset_download/downloads/2023/39RUK/Sentinel-2_mosaic_2023_Q4_39RUK_0_0/B02.tif"
+        b02_path =os.path.join(
+            tile_path,
+            f"Sentinel-2_mosaic_{year}_Q{quarter}_{os.path.basename(tile_path)}_0_0",
+            "B02.tif"
+        )
         if os.path.exists(b02_path):
             with rasterio.open(b02_path) as src:
                 transform = src.transform

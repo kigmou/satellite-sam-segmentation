@@ -3,7 +3,6 @@ import numpy as np
 import cv2
 import os
 import sys
-import torch
 import geopandas as gpd
 from tqdm import tqdm
 

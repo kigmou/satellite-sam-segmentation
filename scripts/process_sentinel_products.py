@@ -1,19 +1,18 @@
 import os
+os.environ["TORCH_CPP_LOG_LEVEL"] = "ERROR"
 import sys
 import zipfile
 import glob
 from pathlib import Path
 import time
 from datetime import datetime
+import argparse
 
 # Add the project root directory to Python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, project_root)
 
-# Add local SAM to Python path
-sam_path = "/home/teulade/segment-anything"
-if sam_path not in sys.path:
-    sys.path.insert(0, sam_path)
+
 
 try:
     from src.sentinel_preprocessing import preprocess_imagery
@@ -38,6 +37,8 @@ def unzip_sentinel_products(base_dir):
     zip_files = glob.glob(os.path.join(base_dir, "**/*.zip"), recursive=True)
     
     failed_files = []
+    output_dir = []
+
     for zip_path in zip_files:
         file_start_time = time.time()
         # Check if already unzipped
@@ -117,7 +118,7 @@ def setup_sam_model():
 
     mask_generator = SamAutomaticMaskGenerator(
         model=sam,
-        points_per_side=64,
+        points_per_side=10,
         points_per_batch=192,
         pred_iou_thresh=0.6,
         stability_score_thresh=0.6,
@@ -191,18 +192,25 @@ def process_sentinel_products(base_dir, year, n_samples=None):
     # Final step: Concatenate all polygons
     concat_start_time = time.time()
     print("\nConcatenating all polygons...")
-    concat_polygons(tile_dirs, os.path.basename(base_dir))
+    concat_polygons(tile_dirs)
     print(f"Polygon concatenation completed in {time.time() - concat_start_time:.2f} seconds")
     
     total_time = time.time() - total_start_time
     print(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Total processing completed in {total_time:.2f} seconds ({total_time/3600:.2f} hours)")
 
+def parse_args():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(description="Process Sentinel products")
+    parser.add_argument("--base_dir", type=str, required=True, help="Path to the base directory with Tiles")
+    parser.add_argument("--sam_path", type=str, help="Path to the SAM model directory")
+    return parser.parse_args()
 if __name__ == "__main__":
     script_start_time = time.time()
     print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Script started")
     
-    base_dir = "/home/teulade/dataset_download/downloads/2023/"
-    year = 2023  # Extract year from base_dir or specify it explicitly
+    args = parse_args()
+    base_dir = args.base_dir
+    year = int(os.path.basename(base_dir))  # Extract year from base_dir
     
     # First unzip all products (if needed)
     unzip_sentinel_products(base_dir)
