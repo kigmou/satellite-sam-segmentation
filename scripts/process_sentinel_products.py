@@ -1,5 +1,4 @@
 import os
-os.environ["TORCH_CPP_LOG_LEVEL"] = "ERROR"
 import sys
 import zipfile
 import glob
@@ -7,33 +6,47 @@ from pathlib import Path
 import time
 from datetime import datetime
 import argparse
+import logging
+# Forcer l'utilisation de 16 threads pour numexpr
+os.environ["NUMEXPR_MAX_THREADS"] = "16"
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(asctime)s] %(levelname)s: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 
 # Add the project root directory to Python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, project_root)
 
-
+# Add local SAM to Python path
+sam_path = r"\models\sam_vit_h_4b8939.pth"
+if sam_path not in sys.path:
+    sys.path.insert(0, sam_path)
 
 try:
     from src.sentinel_preprocessing import preprocess_imagery
     from src.sam_satellite_processor import segment_satellite_imagery
     from src.polygon_merger import merge_overlapping_segments, concat_polygons
     from segment_anything import sam_model_registry, SamAutomaticMaskGenerator
+
 except ImportError as e:
-    print(f"Error importing required modules: {e}")
-    print(f"Current Python path: {sys.path}")
-    print(f"Project root: {project_root}")
-    print("\nPlease make sure you have:")
-    print("1. Installed all requirements from requirements.txt")
-    print("2. The project structure is correct with a 'src' directory containing the required modules")
-    print("3. You're running the script from the project root directory")
+    logging.error(f"Error importing required modules: {e}")
+    logging.error(f"Current Python path: {sys.path}")
+    logging.error(f"Project root: {project_root}")
+    logging.error("\nPlease make sure you have:")
+    logging.error("1. Installed all requirements from requirements.txt")
+    logging.error("2. The project structure is correct with a 'src' directory containing the required modules")
+    logging.error("3. You're running the script from the project root directory")
     sys.exit(1)
 
 def unzip_sentinel_products(base_dir):
     """Unzip all Sentinel product zip files in the given directory."""
     start_time = time.time()
-    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Starting unzip process...")
-    print(f"Checking Sentinel products in {base_dir}")
+    logging.info(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Starting unzip process...")
+    logging.info(f"Checking Sentinel products in {base_dir}")
     zip_files = glob.glob(os.path.join(base_dir, "**/*.zip"), recursive=True)
     
     failed_files = []
@@ -44,10 +57,10 @@ def unzip_sentinel_products(base_dir):
         # Check if already unzipped
         output_dir = os.path.splitext(zip_path)[0]
         if os.path.exists(output_dir) and os.path.isdir(output_dir):
-            print(f"Directory {output_dir} already exists, skipping unzip...")
+            logging.info(f"Directory {output_dir} already exists, skipping unzip...")
             continue
             
-        print(f"Unzipping {zip_path} to {output_dir}")
+        logging.info(f"Unzipping {zip_path} to {output_dir}")
         try:
             os.makedirs(output_dir, exist_ok=True)
             with zipfile.ZipFile(zip_path, 'r') as zip_ref:
@@ -58,16 +71,16 @@ def unzip_sentinel_products(base_dir):
                     for item in os.listdir(nested_dir):
                         os.rename(os.path.join(nested_dir, item), os.path.join(output_dir, item))
                     os.rmdir(nested_dir)
-            print(f"Unzipped {os.path.basename(zip_path)} in {time.time() - file_start_time:.2f} seconds")
+            logging.info(f"Unzipped {os.path.basename(zip_path)} in {time.time() - file_start_time:.2f} seconds")
         except (zipfile.BadZipFile, zipfile.LargeZipFile) as e:
-            print(f"ERROR: Failed to unzip {zip_path}: {str(e)}")
+            logging.error(f"ERROR: Failed to unzip {zip_path}: {str(e)}")
             failed_files.append(zip_path)
             # Clean up the partially created directory if it exists
             if os.path.exists(output_dir) and not os.listdir(output_dir):
                 os.rmdir(output_dir)
             continue
         except Exception as e:
-            print(f"ERROR: Unexpected error while unzipping {zip_path}: {str(e)}")
+            logging.error(f"ERROR: Unexpected error while unzipping {zip_path}: {str(e)}")
             failed_files.append(zip_path)
             # Clean up the partially created directory if it exists
             if os.path.exists(output_dir) and not os.listdir(output_dir):
@@ -75,13 +88,13 @@ def unzip_sentinel_products(base_dir):
             continue
     
     if failed_files:
-        print("\nWARNING: The following files failed to unzip:")
+        logging.warning("The following files failed to unzip:")
         for failed_file in failed_files:
-            print(f"- {failed_file}")
-        print("\nYou may want to check these files and re-download them if necessary.")
+            logging.error(f"- {failed_file}")
+        logging.warning("\nYou may want to check these files and re-download them if necessary.")
     
-    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Unzip process completed in {time.time() - start_time:.2f} seconds")
-    return output_dir
+    logging.info(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Unzip process completed in {time.time() - start_time:.2f} seconds")
+    return output_dir 
 
 def is_preprocessing_done(quarter_dir):
     """Check if preprocessing has already been done."""
@@ -133,70 +146,72 @@ def setup_sam_model():
 def process_sentinel_products(base_dir, year, n_samples=None):
     """Process all Sentinel products in the given directory."""
     total_start_time = time.time()
-    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Starting Sentinel products processing...")
+    logging.info(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Starting Sentinel products processing...")
     
     # Get all tile directories
     tile_dirs = [d for d in glob.glob(os.path.join(base_dir, "*")) if os.path.isdir(d)]
-    
+
     # Setup SAM model
     model_start_time = time.time()
     mask_generator = setup_sam_model()
-    print(f"SAM model setup completed in {time.time() - model_start_time:.2f} seconds")
+    logging.info(f"SAM model setup completed in {time.time() - model_start_time:.2f} seconds")
     
     for tile_dir in tile_dirs:
         tile_start_time = time.time()
         tile_id = os.path.basename(tile_dir)
-        print(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Processing tile: {tile_id}")
+        logging.info(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Processing tile: {tile_id}")
         
         # Process each quarter
         for quarter in range(1, 5):
             quarter_start_time = time.time()
             # Construct the correct quarter directory path
             quarter_dir = os.path.join(tile_dir, f"Sentinel-2_mosaic_{year}_Q{quarter}_{tile_id}_0_0")
+            logging.info(f"Quarter directory: {quarter_dir}")
             if not os.path.exists(quarter_dir):
-                print(f"Quarter {quarter} not found for tile {tile_id}, skipping...")
+                logging.warning(f"Quarter {quarter} not found for tile {tile_id}, skipping...")
                 continue
                 
-            print(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Processing quarter {quarter}")
+            logging.info(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Processing quarter {quarter}")
             
             # Step 1: Preprocess
             step_start_time = time.time()
             if is_preprocessing_done(quarter_dir):
-                print("Step 1: Preprocessing already done, skipping...")
+                logging.warning("Step 1: Preprocessing already done, skipping...")
             else:
-                print("Step 1: Preprocessing imagery...")
+                logging.info("Step 1: Preprocessing imagery...")
                 preprocess_imagery(quarter_dir)
-            print(f"Preprocessing step completed in {time.time() - step_start_time:.2f} seconds")
+            logging.info(f"Preprocessing step completed in {time.time() - step_start_time:.2f} seconds")
             
             # Step 2: SAM Segmentation
             step_start_time = time.time()
             if is_sam_done(quarter_dir):
-                print("Step 2: SAM segmentation already done, skipping...")
+                logging.info("Step 2: SAM segmentation already done, skipping...")
             else:
-                print("Step 2: Running SAM segmentation...")
+                logging.info("Step 2: Running SAM segmentation...")
                 segment_satellite_imagery(quarter_dir, mask_generator, n_samples=n_samples, random_seed=sum(map(ord, tile_id)))
-            print(f"SAM segmentation step completed in {time.time() - step_start_time:.2f} seconds")
-            print(f"Quarter {quarter} processing completed in {time.time() - quarter_start_time:.2f} seconds")
+            logging.info(f"SAM segmentation step completed in {time.time() - step_start_time:.2f} seconds")
+            logging.info(f"Quarter {quarter} processing completed in {time.time() - quarter_start_time:.2f} seconds")
         
+        logging.info("")
+
         # Step 3: Merge polygons for this tile (all quarters)
         step_start_time = time.time()
         if is_merging_done(tile_dir, quarter):
-            print("Step 3: Polygon merging already done for this tile, skipping...")
+            logging.warning("Step 3: Polygon merging already done for this tile, skipping...")
         else:
-            print("Step 3: Merging polygons for all quarters...")
+            logging.info("Step 3: Merging polygons for all quarters...")
             merge_overlapping_segments(tile_dir, list(range(1, 5)), year)
-        print(f"Polygon merging step completed in {time.time() - step_start_time:.2f} seconds")
-        
-        print(f"Tile {tile_id} processing completed in {time.time() - tile_start_time:.2f} seconds")
+        logging.info(f"Polygon merging step completed in {time.time() - step_start_time:.2f} seconds")
+        logging.info(f"Tile {tile_id} processing completed in {time.time() - tile_start_time:.2f} seconds")
     
     # Final step: Concatenate all polygons
     concat_start_time = time.time()
-    print("\nConcatenating all polygons...")
+    logging.info("\nConcatenating all polygons...")
     concat_polygons(tile_dirs)
-    print(f"Polygon concatenation completed in {time.time() - concat_start_time:.2f} seconds")
+    logging.info(f"Polygon concatenation completed in {time.time() - concat_start_time:.2f} seconds")
     
     total_time = time.time() - total_start_time
-    print(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Total processing completed in {total_time:.2f} seconds ({total_time/3600:.2f} hours)")
+    logging.info(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Total processing completed in {total_time:.2f} seconds ({total_time/3600:.2f} hours)")
 
 def parse_args():
     """Parse command line arguments."""
@@ -206,7 +221,7 @@ def parse_args():
     return parser.parse_args()
 if __name__ == "__main__":
     script_start_time = time.time()
-    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Script started")
+    logging.info(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Script started")
     
     args = parse_args()
     base_dir = args.base_dir
@@ -219,4 +234,4 @@ if __name__ == "__main__":
     process_sentinel_products(base_dir, year, n_samples=10)
     
     total_script_time = time.time() - script_start_time
-    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Script completed in {total_script_time:.2f} seconds ({total_script_time/3600:.2f} hours)") 
+    logging.info(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Script completed in {total_script_time:.2f} seconds ({total_script_time/3600:.2f} hours)") 

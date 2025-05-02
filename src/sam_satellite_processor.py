@@ -3,19 +3,23 @@ import numpy as np
 import cv2
 import os
 import sys
+import torch
+import logging
 import geopandas as gpd
 from tqdm import tqdm
 
-# Add local SAM to Python path
-sam_path = "/home/teulade/segment-anything"
-if sam_path not in sys.path:
-    sys.path.insert(0, sam_path)
 
 from segment_anything import SamAutomaticMaskGenerator
 from shapely.geometry import Polygon
 from pyproj import Transformer
 
-    
+  
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(asctime)s] %(levelname)s: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+  
 
 def get_georeferenced_polygons_from_image(path, mask_generator: SamAutomaticMaskGenerator):
     """
@@ -95,7 +99,7 @@ def segment_satellite_imagery(sentinel_path, mask_generator: SamAutomaticMaskGen
     # Get the path to the color-specific directory
     color_dir = os.path.join(sentinel_path, color_type)
     if not os.path.exists(color_dir):
-        print(f"Skipping {color_dir} - directory not found")
+        logging.warning(f"Skipping {color_dir} - directory not found")
         return
 
     # Generate all possible quadrant combinations
@@ -106,12 +110,12 @@ def segment_satellite_imagery(sentinel_path, mask_generator: SamAutomaticMaskGen
         np.random.seed(random_seed)
         selected_quadrants = np.random.choice(len(all_quadrants), size=n_samples, replace=False)
         selected_quadrants = [all_quadrants[i] for i in selected_quadrants]
-        print(f"Selected {n_samples} random quadrants: {selected_quadrants}")
+        logging.info(f"Selected {n_samples} random quadrants: {selected_quadrants}")
     else:
         selected_quadrants = all_quadrants
-        print(f"Processing all {len(selected_quadrants)} quadrants")
+        logging.info(f"Processing all {len(selected_quadrants)} quadrants")
    
-    print(f"Processing {color_dir}")
+    logging.info(f"Processing {color_dir}")
     georeferenced_polygons = []
     
     # Process selected quadrants
@@ -122,14 +126,14 @@ def segment_satellite_imagery(sentinel_path, mask_generator: SamAutomaticMaskGen
                 try:
                     georeferenced_polygons.extend(get_georeferenced_polygons_from_image(path, mask_generator))
                 except Exception as e:
-                    print(f"Error processing {path}: {str(e)}")
+                    logging.error(f"Error processing {path}: {str(e)}")
             pbar.update(1)
     
-    print(f"Found {len(georeferenced_polygons)} polygons for {color_dir}")
+    logging.info(f"Found {len(georeferenced_polygons)} polygons for {color_dir}")
     
     # Before creating the GeoDataFrame, check if we have any polygons
     if not georeferenced_polygons:
-        print(f"No polygons found for {color_dir}. Skipping GeoDataFrame creation.")
+        logging.warning(f"No polygons found for {color_dir}. Skipping GeoDataFrame creation.")
         return
     
     # Create output directories
@@ -156,12 +160,12 @@ def segment_single_image(input_path: str, output_dir: str, mask_generator: SamAu
     Returns:
         gpd.GeoDataFrame: GeoDataFrame containing the segmentation polygons
     """
-    print(f"Processing {input_path}")
+    logging.info(f"Processing {input_path}")
     
     try:
         # Get polygons from image
         georeferenced_polygons = get_georeferenced_polygons_from_image(input_path, mask_generator)
-        print(f"Found {len(georeferenced_polygons)} polygons")
+        logging.info(f"Found {len(georeferenced_polygons)} polygons")
         
         # Get input filename without extension
         input_name = os.path.splitext(os.path.basename(input_path))[0]
@@ -177,9 +181,9 @@ def segment_single_image(input_path: str, output_dir: str, mask_generator: SamAu
         output_shapefile = os.path.join(shapefile_dir, f"polygons_{input_name}.shp")
         gdf.to_file(output_shapefile, driver='ESRI Shapefile')
         
-        print(f"Results saved to {output_shapefile}")
+        logging.info(f"Results saved to {output_shapefile}")
         return gdf
         
     except Exception as e:
-        print(f"Error processing {input_path}: {str(e)}")
+        logging.error(f"Error processing {input_path}: {str(e)}")
         return None
