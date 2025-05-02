@@ -96,22 +96,29 @@ def unzip_sentinel_products(base_dir):
     logging.info(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Unzip process completed in {time.time() - start_time:.2f} seconds")
     return output_dir 
 
-def is_preprocessing_done(quarter_dir):
+def is_preprocessing_done(quarter_dir, overwrite=False):
     """Check if preprocessing has already been done."""
+    if overwrite:
+        return False
     # Check for color composite and tiles
     color_composite = os.path.join(quarter_dir, "nrg", "sentinel_composite.tif")
     tiles_dir = os.path.join(quarter_dir, "nrg", "tiles_10x10")
     return os.path.exists(color_composite) and os.path.exists(tiles_dir)
 
-def is_sam_done(quarter_dir):
+def is_sam_done(quarter_dir, overwrite=False):
     """Check if SAM segmentation has already been done."""
+    if overwrite:
+        return False
     # Check for SAM output files
     parquet_file = os.path.join(quarter_dir, "nrg", "polygons_10x10.parquet")
     shapefile_dir = os.path.join(quarter_dir, "nrg", "shapefiles_10x10")
+   
     return os.path.exists(parquet_file) and os.path.exists(shapefile_dir)
 
-def is_merging_done(tile_dir, quarter):
+def is_merging_done(tile_dir, quarter, overwrite=False):
     """Check if polygon merging has already been done."""
+    if overwrite:
+        return False
     # Check for merged polygon files
     tile_id = os.path.basename(tile_dir)
     parquet_file = os.path.join(tile_dir, "nrg", "intersection_polygons", f"{tile_id}_intersection.parquet")
@@ -143,7 +150,7 @@ def setup_sam_model():
     
     return mask_generator
 
-def process_sentinel_products(base_dir, year, n_samples=None):
+def process_sentinel_products(base_dir, year, n_samples=None, overwrite=False):
     """Process all Sentinel products in the given directory."""
     total_start_time = time.time()
     logging.info(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Starting Sentinel products processing...")
@@ -175,39 +182,39 @@ def process_sentinel_products(base_dir, year, n_samples=None):
             
             # Step 1: Preprocess
             step_start_time = time.time()
-            if is_preprocessing_done(quarter_dir):
+            if is_preprocessing_done(quarter_dir, overwrite=overwrite):
                 logging.warning("Step 1: Preprocessing already done, skipping...")
             else:
                 logging.info("Step 1: Preprocessing imagery...")
-                preprocess_imagery(quarter_dir)
+                preprocess_imagery(quarter_dir, overwrite=overwrite)
             logging.info(f"Preprocessing step completed in {time.time() - step_start_time:.2f} seconds")
             
             # Step 2: SAM Segmentation
             step_start_time = time.time()
-            if is_sam_done(quarter_dir):
+            if is_sam_done(quarter_dir, overwrite=overwrite):
                 logging.info("Step 2: SAM segmentation already done, skipping...")
             else:
                 logging.info("Step 2: Running SAM segmentation...")
-                segment_satellite_imagery(quarter_dir, mask_generator, n_samples=n_samples, random_seed=sum(map(ord, tile_id)))
+                segment_satellite_imagery(quarter_dir, mask_generator, n_samples=n_samples, random_seed=sum(map(ord, tile_id)), overwrite=overwrite)
             logging.info(f"SAM segmentation step completed in {time.time() - step_start_time:.2f} seconds")
             logging.info(f"Quarter {quarter} processing completed in {time.time() - quarter_start_time:.2f} seconds")
         
-        logging.info("")
+        print("\n")
 
         # Step 3: Merge polygons for this tile (all quarters)
         step_start_time = time.time()
-        if is_merging_done(tile_dir, quarter):
+        if is_merging_done(tile_dir, quarter, overwrite=overwrite):
             logging.warning("Step 3: Polygon merging already done for this tile, skipping...")
         else:
             logging.info("Step 3: Merging polygons for all quarters...")
-            merge_overlapping_segments(tile_dir, list(range(1, 5)), year)
+            merge_overlapping_segments(tile_dir, list(range(1, 5)), year, overwrite=overwrite)
         logging.info(f"Polygon merging step completed in {time.time() - step_start_time:.2f} seconds")
         logging.info(f"Tile {tile_id} processing completed in {time.time() - tile_start_time:.2f} seconds")
     
     # Final step: Concatenate all polygons
     concat_start_time = time.time()
     logging.info("\nConcatenating all polygons...")
-    concat_polygons(tile_dirs)
+    concat_polygons(tile_dirs, overwrite)
     logging.info(f"Polygon concatenation completed in {time.time() - concat_start_time:.2f} seconds")
     
     total_time = time.time() - total_start_time
@@ -217,7 +224,7 @@ def parse_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="Process Sentinel products")
     parser.add_argument("--base_dir", type=str, required=True, help="Path to the base directory with Tiles")
-    parser.add_argument("--sam_path", type=str, help="Path to the SAM model directory")
+    parser.add_argument("--overwrite", action="store_true", help="Overwrite existing files")
     return parser.parse_args()
 if __name__ == "__main__":
     script_start_time = time.time()
@@ -225,13 +232,14 @@ if __name__ == "__main__":
     
     args = parse_args()
     base_dir = args.base_dir
+    overwrite = args.overwrite
     year = int(os.path.basename(base_dir))  # Extract year from base_dir
     
     # First unzip all products (if needed)
     unzip_sentinel_products(base_dir)
     
     # Then process all products with n_samples=10
-    process_sentinel_products(base_dir, year, n_samples=10)
+    process_sentinel_products(base_dir, year, n_samples=10, overwrite=overwrite)
     
     total_script_time = time.time() - script_start_time
     logging.info(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Script completed in {total_script_time:.2f} seconds ({total_script_time/3600:.2f} hours)") 

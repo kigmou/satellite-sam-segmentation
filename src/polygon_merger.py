@@ -5,7 +5,8 @@ import rasterio
 from tqdm import tqdm
 import os
 import logging
-from shapely.validation import make_valid  # Add this import
+from shapely.validation import make_valid 
+import shutil
 
 
 logging.basicConfig(
@@ -13,6 +14,13 @@ logging.basicConfig(
     format='[%(asctime)s] %(levelname)s: %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )
+
+
+def delete_files_in_directory(directory, overwrite):
+    """Supprime les fichiers dans un dossier si overwrite est True"""
+    if overwrite and os.path.exists(directory):
+        logging.info(f"Deleting files in {directory}")
+        shutil.rmtree(directory)
 
 def get_pixel_area(tile_path, quarters, year):
     # Get pixel area from any available quarter's B02.tif
@@ -104,7 +112,7 @@ def create_intersection_gdf(filtered_gdf):
     
     return intersection_gdf
 
-def merge_overlapping_segments(tile_path, quarters, year, color_type='nrg', grid_size=10, min_pixels=100):
+def merge_overlapping_segments(tile_path, quarters, year, color_type='nrg', grid_size=10, min_pixels=100, overwrite=False):
     """
     Merge quarterly polygons for a single tile from a list of quarters.
     
@@ -157,13 +165,14 @@ def merge_overlapping_segments(tile_path, quarters, year, color_type='nrg', grid
     intersection_gdf = create_intersection_gdf(filtered_gdf)
     
     # Create merge directory in color-specific folder
-    merge_path = os.path.join(tile_path, color_type, "intersection_polygons")
+    merge_path = os.path.join(tile_path, color_type,"intersection_polygons")
+    delete_files_in_directory(merge_path, overwrite=True)
     os.makedirs(merge_path, exist_ok=True)
     
     intersection_gdf.to_file(os.path.join(merge_path, f"{tile_id}_intersection.shp"))
     intersection_gdf.to_parquet(os.path.join(merge_path, f"{tile_id}_intersection.parquet"))
 
-def concat_polygons(tile_paths, color_type='nrg', grid_size=10, polygons_name="all_polygons"):
+def concat_polygons(tile_paths, color_type='nrg', grid_size=10, polygons_name="all_polygons",overwrite=False):
     gdfs = []
     for tile_path in tqdm(tile_paths, desc="Loading tiles"):
         parquet_path = os.path.join(
@@ -191,6 +200,7 @@ def concat_polygons(tile_paths, color_type='nrg', grid_size=10, polygons_name="a
             os.path.dirname(tile_paths[0]),  # Use the parent directory of the first tile
             f"{polygons_name}_{color_type}_{grid_size}x{grid_size}"
         )
+        delete_files_in_directory(output_dir, overwrite=True) 
         os.makedirs(output_dir, exist_ok=True)
         
         # Save combined results

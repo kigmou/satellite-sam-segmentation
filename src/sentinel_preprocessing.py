@@ -5,6 +5,8 @@ from segment_anything import SamPredictor, sam_model_registry
 import os
 from tqdm import tqdm
 import logging
+from src.polygon_merger import delete_files_in_directory
+
 
 
 logging.basicConfig(
@@ -21,19 +23,20 @@ def cumulative_count_cut(band, min_percentile=2, max_percentile=98):
     #print(min_val,max_val)
     return (band - min_val) / (max_val - min_val) * 255
     
-# Définir les chemins vers les fichiers de bandes
 
-def build_rgb_from_sentinel(sentinel_path, color_type='nrg'):
+def build_rgb_from_sentinel(sentinel_path, color_type='nrg',overwrite=False):
     """
     Create color composite from Sentinel-2 bands.
     
     Args:
-        sentinel_path (str): Path to the Sentinel-2 bands directory
-        color_type (str): Either 'rgb' for true color or 'nrg' for NIR-Red-Green
+        sentinel_path: Path to the Sentinel-2 bands directory
+        color_type : Either 'rgb' for true color or 'nrg' for NIR-Red-Green
+        overwrite : If True, overwrite existing files
     Returns:
         str: Path to the output TIF
     """
     output_dir = os.path.join(sentinel_path, color_type)
+    delete_files_in_directory(output_dir, overwrite)
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, f'sentinel_composite.tif')
     
@@ -70,17 +73,19 @@ def build_rgb_from_sentinel(sentinel_path, color_type='nrg'):
     
     return output_path
 
-def build_color_from_JP2(jp2_path, color_type='nrg'):
+def build_color_from_JP2(jp2_path, color_type='nrg',overwrite=False):
     """
     Create color composite from Pléiades JP2 file using windows.
     
     Args:
-        jp2_path (str): Path to JP2 file
-        color_type (str): Either 'rgb' for true color or 'nrg' for NIR-Red-Green
+        jp2_path : Path to JP2 file
+        color_type : Either 'rgb' for true color or 'nrg' for NIR-Red-Green
+
     Returns:
-        str: Path to output TIF file
+        Path to output TIF file
     """
     output_dir = os.path.join(os.path.dirname(jp2_path), color_type)
+    delete_files_in_directory(output_dir, overwrite)
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, f'pleiades_composite.tif')
     
@@ -153,7 +158,7 @@ def build_color_from_JP2(jp2_path, color_type='nrg'):
         logging.error(f"Error processing JP2 file: {str(e)}")
         return None
     
-def split_image_in_tiles(input_file, grid_size=10):
+def split_image_in_tiles(input_file, grid_size=10,overwrite=False):
     """
     Split the input image into tiles based on specified grid size.
     
@@ -167,6 +172,7 @@ def split_image_in_tiles(input_file, grid_size=10):
         
         output_dir = os.path.dirname(input_file)  # Will be in the color_type directory
         tiles_dir = os.path.join(output_dir, f"tiles_{grid_size}x{grid_size}")
+        delete_files_in_directory(tiles_dir, overwrite)
         os.makedirs(tiles_dir, exist_ok=True)
 
         # Calculate dimensions for each sub-image
@@ -205,24 +211,25 @@ def split_image_in_tiles(input_file, grid_size=10):
     logging.info(f"Splitting complete. Sub-images are saved in: {tiles_dir}")
 
 
-def preprocess_imagery(input_path, color_type='nrg'):
+def preprocess_imagery(input_path, color_type='nrg', overwrite=False):
     """
     Generic preprocessing function for both Sentinel-2 and Pléiades imagery.
     
     Args:
-        input_path (str): Path to either Sentinel-2 directory or Pléiades JP2 file
-        color_type (str): Either 'rgb' for true color or 'nrg' for NIR-Red-Green
+        input_path : Path to either Sentinel-2 directory or Pléiades JP2 file
+        color_type : Either 'rgb' for true color or 'nrg' for NIR-Red-Green
+        overwrite : If True, overwrite existing files
     """
     logging.info(f"Processing {input_path}")
     
     try:
         if input_path.endswith('.JP2'):
-            composite_path = build_color_from_JP2(input_path, color_type)
+            composite_path = build_color_from_JP2(input_path, color_type, overwrite)
         else:
-            composite_path = build_rgb_from_sentinel(input_path, color_type)
+            composite_path = build_rgb_from_sentinel(input_path, color_type, overwrite)
 
         logging.info(f"Finish color composite build")
-        split_image_in_tiles(composite_path)
+        split_image_in_tiles(composite_path, overwrite=overwrite)
         logging.info(f"Successfully processed {input_path}")
         
     except Exception as e:
