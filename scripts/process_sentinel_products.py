@@ -7,6 +7,7 @@ import time
 from datetime import datetime
 import argparse
 import logging
+from segment_anything import SamPredictor, sam_model_registry
 # Forcer l'utilisation de 16 threads pour numexpr
 os.environ["NUMEXPR_MAX_THREADS"] = "16"
 
@@ -123,7 +124,6 @@ def is_merging_done(tile_dir, overwrite=False):
     parquet_file = os.path.join(tile_dir, "intersection_polygons", f"{tile_id}_intersection.parquet")
     shapefile = os.path.join(tile_dir, "intersection_polygons", f"{tile_id}_intersection.shp")
     result = os.path.exists(parquet_file) and os.path.exists(shapefile)
-    logging.debug(f"is_merging_done: parquet_file={os.path.exists(parquet_file)}, shapefile={os.path.exists(shapefile)}, result={result}")
     return result
 
 def setup_sam_model():
@@ -139,7 +139,7 @@ def setup_sam_model():
 
     mask_generator = SamAutomaticMaskGenerator(
         model=sam,
-        points_per_side=10,
+        points_per_side=32,
         points_per_batch=192,
         pred_iou_thresh=0.6,
         stability_score_thresh=0.6,
