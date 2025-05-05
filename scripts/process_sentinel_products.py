@@ -232,8 +232,14 @@ if __name__ == "__main__":
     
     args = parse_args()
     base_dir = args.base_dir
+
+    if not os.path.exists(base_dir):
+        logging.error(f"Base directory {base_dir} does not exist.")
+        sys.exit(1)
+        
     overwrite = args.overwrite
     year = int(os.path.basename(base_dir))  # Extract year from base_dir
+
     
     # First unzip all products (if needed)
     unzip_sentinel_products(base_dir)
