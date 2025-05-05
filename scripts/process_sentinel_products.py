@@ -15,6 +15,11 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, project_root)
 
+# Add local SAM to Python path
+sam_path = "/home/teulade/segment-anything"
+if sam_path not in sys.path:
+    sys.path.insert(0, sam_path)
+
 
 try:
     from src.sentinel_preprocessing import preprocess_imagery
@@ -219,7 +224,7 @@ if __name__ == "__main__":
         logging.error(f"The provided base directory does not exist or is not a directory: {args.base_dir}")
         sys.exit(1)
 
-    if args.year is None:
+    if not args.year:
         try:
             args.year = int(os.path.basename(args.base_dir))
         except ValueError:

@@ -133,7 +133,7 @@ def merge_overlapping_segments(tile_path, quarters, year, color_type='nrg', grid
             geodfs.append(gpd.read_parquet(quarter_path).to_crs("EPSG:32632"))
     
     if not geodfs:
-        logging.warning(f"No parquet files found for tile {tile_id}")
+        logging.info(f"No parquet files found for tile {tile_id}")
         return
     
     # Concatenate GeoDataFrames
