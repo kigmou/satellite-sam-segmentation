@@ -57,6 +57,11 @@ The project provides scripts to process Sentinel satellite imagery:
 python scripts/process_sentinel_products.py
 ```
 
+#### Key Arguments
+
+- `--base_dir`: Path to the directory containing tiles (required). This is the base directory where the Sentinel product tiles are located.
+- `--overwrite`: Optional flag. If provided, existing files will be overwritten during processing. If not provided, the script will skip processing for files that already exist.
+
 The script will:
 1. Unzip all Sentinel product zip files
 2. Preprocess the imagery
