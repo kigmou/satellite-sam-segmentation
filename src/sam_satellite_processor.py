@@ -14,12 +14,8 @@ from shapely.geometry import Polygon
 from pyproj import Transformer
 
   
-logging.basicConfig(
-    level=logging.INFO,
-    format='[%(asctime)s] %(levelname)s: %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
-  
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 
 def get_georeferenced_polygons_from_image(path, mask_generator: SamAutomaticMaskGenerator):
     """

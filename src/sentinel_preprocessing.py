@@ -7,11 +7,8 @@ from tqdm import tqdm
 import logging
 
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='[%(asctime)s] %(levelname)s: %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 
 def cumulative_count_cut(band, min_percentile=2, max_percentile=98):
     """Apply contrast enhancement stretch similar to QGIS"""

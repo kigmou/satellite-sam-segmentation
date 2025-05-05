@@ -7,12 +7,8 @@ import os
 import logging
 from shapely.validation import make_valid  # Add this import
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='[%(asctime)s] %(levelname)s: %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
 
 def get_pixel_area(tile_path, quarters, year):
     # Get pixel area from any available quarter's B02.tif
@@ -117,6 +113,7 @@ def merge_overlapping_segments(tile_path, quarters, year, color_type='nrg', grid
         min_pixels: Minimum number of pixels for a segment to be kept (default: 100)
     """
     tile_id = os.path.basename(tile_path)
+    logging.info(f"\nProcessing tile {tile_id} for quarters: {quarters}")
     pixel_area = get_pixel_area(tile_path, quarters, year)
     
     if pixel_area is None:
