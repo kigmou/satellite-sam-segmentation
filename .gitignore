@@ -13,4 +13,5 @@ models/*.pth
 # OS
 .DS_Store
 
+# Tile directorty
 20[0-9][0-9]/

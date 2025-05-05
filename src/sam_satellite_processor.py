@@ -99,7 +99,7 @@ def segment_satellite_imagery(sentinel_path, mask_generator: SamAutomaticMaskGen
     # Get the path to the color-specific directory
     color_dir = os.path.join(sentinel_path, color_type)
     if not os.path.exists(color_dir):
-        logging.warning(f"Skipping {color_dir} - directory not found")
+        logging.info(f"Skipping {color_dir} - directory not found")
         return
 
     # Generate all possible quadrant combinations
@@ -133,7 +133,7 @@ def segment_satellite_imagery(sentinel_path, mask_generator: SamAutomaticMaskGen
     
     # Before creating the GeoDataFrame, check if we have any polygons
     if not georeferenced_polygons:
-        logging.warning(f"No polygons found for {color_dir}. Skipping GeoDataFrame creation.")
+        logging.info(f"No polygons found for {color_dir}. Skipping GeoDataFrame creation.")
         return
     
     # Create output directories

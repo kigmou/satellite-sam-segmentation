@@ -120,7 +120,7 @@ def merge_overlapping_segments(tile_path, quarters, year, color_type='nrg', grid
     pixel_area = get_pixel_area(tile_path, quarters, year)
     
     if pixel_area is None:
-        logging.warning(f"Could not find B02.tif for tile {tile_id}")
+        logging.info(f"Could not find B02.tif for tile {tile_id}")
         return
     
     # Load quarterly parquet files with new path structure
@@ -180,7 +180,7 @@ def concat_polygons(tile_paths, color_type='nrg', grid_size=10, polygons_name="a
             except Exception as e:
                 logging.error(f"Error loading {parquet_path}: {str(e)}")
         else:
-            logging.warning(f"No parquet file found for {parquet_path}")
+            logging.info(f"No parquet file found for {parquet_path}")
 
     if gdfs:
         combined_gdf = gpd.GeoDataFrame(pd.concat(gdfs, ignore_index=True))
@@ -199,4 +199,4 @@ def concat_polygons(tile_paths, color_type='nrg', grid_size=10, polygons_name="a
         
         logging.info(f"\nSaved merged files to {output_dir}")
     else:
-        logging.warning("No data found to merge")
+        logging.info("No data found to merge")

@@ -7,15 +7,9 @@ import time
 from datetime import datetime
 import argparse
 import logging
-# Forcer l'utilisation de 16 threads pour numexpr
-os.environ["NUMEXPR_MAX_THREADS"] = "16"
 
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='[%(asctime)s] %(levelname)s: %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Add the project root directory to Python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -88,10 +82,10 @@ def unzip_sentinel_products(base_dir):
             continue
     
     if failed_files:
-        logging.warning("The following files failed to unzip:")
+        logging.info("The following files failed to unzip:")
         for failed_file in failed_files:
             logging.error(f"- {failed_file}")
-        logging.warning("\nYou may want to check these files and re-download them if necessary.")
+        logging.info("\nYou may want to check these files and re-download them if necessary.")
     
     logging.info(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Unzip process completed in {time.time() - start_time:.2f} seconds")
     return output_dir 
@@ -131,7 +125,7 @@ def setup_sam_model():
 
     mask_generator = SamAutomaticMaskGenerator(
         model=sam,
-        points_per_side=10,
+        points_per_side=64,
         points_per_batch=192,
         pred_iou_thresh=0.6,
         stability_score_thresh=0.6,
@@ -168,7 +162,7 @@ def process_sentinel_products(base_dir, year, n_samples=None):
             quarter_dir = os.path.join(tile_dir, f"Sentinel-2_mosaic_{year}_Q{quarter}_{tile_id}_0_0")
             logging.info(f"Quarter directory: {quarter_dir}")
             if not os.path.exists(quarter_dir):
-                logging.warning(f"Quarter {quarter} not found for tile {tile_id}, skipping...")
+                logging.info(f"Quarter {quarter} not found for tile {tile_id}, skipping...")
                 continue
                 
             logging.info(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Processing quarter {quarter}")
@@ -176,7 +170,7 @@ def process_sentinel_products(base_dir, year, n_samples=None):
             # Step 1: Preprocess
             step_start_time = time.time()
             if is_preprocessing_done(quarter_dir):
-                logging.warning("Step 1: Preprocessing already done, skipping...")
+                logging.info("Step 1: Preprocessing already done, skipping...")
             else:
                 logging.info("Step 1: Preprocessing imagery...")
                 preprocess_imagery(quarter_dir)
@@ -197,7 +191,7 @@ def process_sentinel_products(base_dir, year, n_samples=None):
         # Step 3: Merge polygons for this tile (all quarters)
         step_start_time = time.time()
         if is_merging_done(tile_dir, quarter):
-            logging.warning("Step 3: Polygon merging already done for this tile, skipping...")
+            logging.info("Step 3: Polygon merging already done for this tile, skipping...")
         else:
             logging.info("Step 3: Merging polygons for all quarters...")
             merge_overlapping_segments(tile_dir, list(range(1, 5)), year)
