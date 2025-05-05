@@ -9,11 +9,8 @@ from shapely.validation import make_valid
 import shutil
 
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='[%(asctime)s] %(levelname)s: %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 
 
 def delete_files_in_directory(directory, overwrite):
@@ -21,6 +18,9 @@ def delete_files_in_directory(directory, overwrite):
     if overwrite and os.path.exists(directory):
         logging.info(f"Deleting files in {directory}")
         shutil.rmtree(directory)
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 
 def get_pixel_area(tile_path, quarters, year):
     # Get pixel area from any available quarter's B02.tif
@@ -125,10 +125,11 @@ def merge_overlapping_segments(tile_path, quarters, year, color_type='nrg', grid
         min_pixels: Minimum number of pixels for a segment to be kept (default: 100)
     """
     tile_id = os.path.basename(tile_path)
+    logging.info(f"\nProcessing tile {tile_id} for quarters: {quarters}")
     pixel_area = get_pixel_area(tile_path, quarters, year)
     
     if pixel_area is None:
-        logging.warning(f"Could not find B02.tif for tile {tile_id}")
+        logging.info(f"Could not find B02.tif for tile {tile_id}")
         return
     
     # Load quarterly parquet files with new path structure
@@ -144,7 +145,7 @@ def merge_overlapping_segments(tile_path, quarters, year, color_type='nrg', grid
             geodfs.append(gpd.read_parquet(quarter_path).to_crs("EPSG:32632"))
     
     if not geodfs:
-        logging.warning(f"No parquet files found for tile {tile_id}")
+        logging.info(f"No parquet files found for tile {tile_id}")
         return
     
     # Concatenate GeoDataFrames
@@ -188,7 +189,7 @@ def concat_polygons(tile_paths, color_type='nrg', grid_size=10, polygons_name="a
             except Exception as e:
                 logging.error(f"Error loading {parquet_path}: {str(e)}")
         else:
-            logging.warning(f"No parquet file found for {parquet_path}")
+            logging.info(f"No parquet file found for {parquet_path}")
 
     if gdfs:
         combined_gdf = gpd.GeoDataFrame(pd.concat(gdfs, ignore_index=True))
@@ -208,4 +209,4 @@ def concat_polygons(tile_paths, color_type='nrg', grid_size=10, polygons_name="a
         
         logging.info(f"\nSaved merged files to {output_dir}")
     else:
-        logging.warning("No data found to merge")
+        logging.info("No data found to merge")

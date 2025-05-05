@@ -9,11 +9,7 @@ import logging
 import pandas as pd
 
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='[%(asctime)s] %(levelname)s: %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Add the project root directory to Python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -89,7 +85,7 @@ def concat_quarter_polygons(tile_dirs, year, color_type='nrg', grid_size=10):
             combined_gdf.to_file(os.path.join(output_dir, f"Q{quarter}_polygons.shp"))
             logging.info(f"Saved Q{quarter} polygons to {output_dir}")
         else:
-            logging.warning(f"No data found for Q{quarter}")
+            logging.info(f"No data found for Q{quarter}")
 
 def concat_intersection_polygons(tile_dirs, color_type='nrg', grid_size=10):
     """Concatenate intersection polygons."""
@@ -129,7 +125,7 @@ def concat_intersection_polygons(tile_dirs, color_type='nrg', grid_size=10):
         combined_gdf.to_file(os.path.join(output_dir, "intersection_polygons.shp"))
         logging.info(f"Saved intersection polygons to {output_dir}")
     else:
-        logging.warning("No intersection polygons found to merge")
+        logging.info("No intersection polygons found to merge")
 
 def main():
     base_dir = "/home/teulade/dataset_download/shapefiles_copy/"

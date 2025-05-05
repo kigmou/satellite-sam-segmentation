@@ -8,12 +8,8 @@ import logging
 from src.polygon_merger import delete_files_in_directory
 
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='[%(asctime)s] %(levelname)s: %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
 
 def cumulative_count_cut(band, min_percentile=2, max_percentile=98):
     """Apply contrast enhancement stretch similar to QGIS"""

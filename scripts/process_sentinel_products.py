@@ -8,15 +8,9 @@ from datetime import datetime
 import argparse
 import logging
 from segment_anything import SamPredictor, sam_model_registry
-# Forcer l'utilisation de 16 threads pour numexpr
-os.environ["NUMEXPR_MAX_THREADS"] = "16"
 
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='[%(asctime)s] %(levelname)s: %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Add the project root directory to Python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -52,7 +46,6 @@ def unzip_sentinel_products(base_dir):
     zip_files = glob.glob(os.path.join(base_dir, "**/*.zip"), recursive=True)
     
     failed_files = []
-    output_dir = []
 
     for zip_path in zip_files:
         file_start_time = time.time()
@@ -90,13 +83,12 @@ def unzip_sentinel_products(base_dir):
             continue
     
     if failed_files:
-        logging.warning("The following files failed to unzip:")
+        logging.info("The following files failed to unzip:")
         for failed_file in failed_files:
             logging.error(f"- {failed_file}")
-        logging.warning("\nYou may want to check these files and re-download them if necessary.")
+        logging.info("\nYou may want to check these files and re-download them if necessary.")
     
     logging.info(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Unzip process completed in {time.time() - start_time:.2f} seconds")
-    return output_dir 
 
 def is_preprocessing_done(quarter_dir, overwrite=False):
     """Check if preprocessing has already been done."""
@@ -171,7 +163,7 @@ def process_sentinel_products(base_dir, year, n_samples=None, overwrite=False):
         tile_start_time = time.time()
         tile_id = os.path.basename(tile_dir)
         print("\n")
-        logging.info(f" Processing tile: {tile_id}")
+        logging.info(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Processing tile: {tile_id}")
         
         # Process each quarter
         for quarter in range(1, 5):
@@ -180,7 +172,7 @@ def process_sentinel_products(base_dir, year, n_samples=None, overwrite=False):
             quarter_dir = os.path.join(tile_dir, f"Sentinel-2_mosaic_{year}_Q{quarter}_{tile_id}_0_0")
             logging.info(f"Quarter directory: {quarter_dir}")
             if not os.path.exists(quarter_dir):
-                logging.warning(f"Quarter {quarter} not found for tile {tile_id}, skipping...")
+                logging.info(f"Quarter {quarter} not found for tile {tile_id}, skipping...")
                 continue
             
             print("\n")
@@ -189,7 +181,7 @@ def process_sentinel_products(base_dir, year, n_samples=None, overwrite=False):
             # Step 1: Preprocess
             step_start_time = time.time()
             if is_preprocessing_done(quarter_dir, overwrite=overwrite):
-                logging.warning("Step 1: Preprocessing already done, skipping...")
+                logging.info("Step 1: Preprocessing already done, skipping...")
             else:
                 logging.info("Step 1: Preprocessing imagery...")
                 preprocess_imagery(quarter_dir, overwrite=overwrite)
@@ -233,27 +225,38 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Process Sentinel products")
     parser.add_argument("--base_dir", type=str, required=True, help="Path to the base directory with Tiles")
     parser.add_argument("--overwrite", action="store_true", help="Overwrite existing files")
+    parser.add_argument("--sam_path", type=str, default="models/sam_vit_h_4b8939.pth", help="Path to the SAM model directory")
+    parser.add_argument("--year", type=int, help="Year of the Sentinel data (e.g., 2023)")
     return parser.parse_args()
+        
 if __name__ == "__main__":
     script_start_time = time.time()
-    logging.info(f"Script started")
+    logging.info(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Script started")
     
     args = parse_args()
-    base_dir = args.base_dir
 
-    if not os.path.exists(base_dir):
-        logging.error(f"Base directory {base_dir} does not exist.")
+    if not os.path.isdir(args.base_dir):
+        logging.error(f"The provided base directory does not exist or is not a directory: {args.base_dir}")
         sys.exit(1)
-        
-    overwrite = args.overwrite
-    year = int(os.path.basename(base_dir))  # Extract year from base_dir
 
-    
+    if not args.year:
+        try:
+            args.year = int(os.path.basename(args.base_dir))
+        except ValueError:
+            logging.error("Year not provided and could not be inferred from base_dir. Please provide a valid year.")
+            sys.exit(1)
+    overwrite = args.overwrite
+
+    # Add local SAM to Python path
+    sam_path = args.sam_path
+    if sam_path not in sys.path:
+        sys.path.insert(0, sam_path)
+
     # First unzip all products (if needed)
-    unzip_sentinel_products(base_dir)
+    unzip_sentinel_products(args.base_dir)
     
     # Then process all products with n_samples=10
-    process_sentinel_products(base_dir, year, n_samples=10, overwrite=overwrite)
+    process_sentinel_products(args.base_dir, args.year, n_samples=10, overwrite=overwrite)
     
     total_script_time = time.time() - script_start_time
     logging.info(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Script completed in {total_script_time:.2f} seconds ({total_script_time/3600:.2f} hours)") 
