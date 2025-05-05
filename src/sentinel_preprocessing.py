@@ -224,9 +224,9 @@ def preprocess_imagery(input_path, color_type='nrg', overwrite=False):
     
     try:
         if input_path.endswith('.JP2'):
-            composite_path = build_color_from_JP2(input_path, color_type, overwrite)
+            composite_path = build_color_from_JP2(input_path, color_type, overwrite=overwrite)
         else:
-            composite_path = build_rgb_from_sentinel(input_path, color_type, overwrite)
+            composite_path = build_rgb_from_sentinel(input_path, color_type, overwrite=overwrite)
 
         logging.info(f"Finish color composite build")
         split_image_in_tiles(composite_path, overwrite=overwrite)

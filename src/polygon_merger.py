@@ -165,19 +165,18 @@ def merge_overlapping_segments(tile_path, quarters, year, color_type='nrg', grid
     intersection_gdf = create_intersection_gdf(filtered_gdf)
     
     # Create merge directory in color-specific folder
-    merge_path = os.path.join(tile_path, color_type,"intersection_polygons")
+    merge_path = os.path.join(tile_path, "intersection_polygons")
     delete_files_in_directory(merge_path, overwrite=overwrite)
     os.makedirs(merge_path, exist_ok=True)
     
     intersection_gdf.to_file(os.path.join(merge_path, f"{tile_id}_intersection.shp"))
     intersection_gdf.to_parquet(os.path.join(merge_path, f"{tile_id}_intersection.parquet"))
 
-def concat_polygons(tile_paths, color_type='nrg', grid_size=10, polygons_name="all_polygons", overwrite=False):
+def concat_polygons(tile_paths, color_type='nrg', grid_size=10, polygons_name="all_polygons",overwrite=False):
     gdfs = []
     for tile_path in tqdm(tile_paths, desc="Loading tiles"):
         parquet_path = os.path.join(
             tile_path, 
-            color_type,
             "intersection_polygons", 
             f"{os.path.basename(tile_path)}_intersection.parquet"
         )
