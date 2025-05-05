@@ -4,6 +4,10 @@ import numpy as np
 from segment_anything import SamPredictor, sam_model_registry
 import os
 from tqdm import tqdm
+import logging
+
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 def cumulative_count_cut(band, min_percentile=2, max_percentile=98):
@@ -143,7 +147,7 @@ def build_color_from_JP2(jp2_path, color_type='nrg'):
         return output_path
         
     except Exception as e:
-        print(f"Error processing JP2 file: {str(e)}")
+        logging.error(f"Error processing JP2 file: {str(e)}")
         return None
     
 def split_image_in_tiles(input_file, grid_size=10):
@@ -167,7 +171,7 @@ def split_image_in_tiles(input_file, grid_size=10):
         tile_height = height // grid_size
 
         total_tiles = grid_size * grid_size
-        print(f"\nSplitting image into {total_tiles} tiles ({grid_size}x{grid_size} grid)")
+        logging.info(f"\nSplitting image into {total_tiles} tiles ({grid_size}x{grid_size} grid)")
         
         # Loop through each quadrant with progress bar
         with tqdm(total=total_tiles, desc="Splitting image", unit="tile") as pbar:
@@ -195,7 +199,7 @@ def split_image_in_tiles(input_file, grid_size=10):
                     
                     pbar.update(1)
 
-    print(f"Splitting complete. Sub-images are saved in: {tiles_dir}")
+    logging.info(f"Splitting complete. Sub-images are saved in: {tiles_dir}")
 
 
 def preprocess_imagery(input_path, color_type='nrg'):
@@ -206,7 +210,7 @@ def preprocess_imagery(input_path, color_type='nrg'):
         input_path (str): Path to either Sentinel-2 directory or Pléiades JP2 file
         color_type (str): Either 'rgb' for true color or 'nrg' for NIR-Red-Green
     """
-    print(f"Processing {input_path}")
+    logging.info(f"Processing {input_path}")
     
     try:
         if input_path.endswith('.JP2'):
@@ -214,9 +218,9 @@ def preprocess_imagery(input_path, color_type='nrg'):
         else:
             composite_path = build_rgb_from_sentinel(input_path, color_type)
 
-        print(f"Finish color composite build")
+        logging.info(f"Finish color composite build")
         split_image_in_tiles(composite_path)
-        print(f"Successfully processed {input_path}")
+        logging.info(f"Successfully processed {input_path}")
         
     except Exception as e:
-        print(f"Error processing {input_path}: {str(e)}")
+        logging.error(f"Error processing {input_path}: {str(e)}")

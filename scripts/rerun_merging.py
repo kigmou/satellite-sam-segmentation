@@ -5,7 +5,11 @@ from pathlib import Path
 import time
 from datetime import datetime
 import geopandas as gpd
+import logging
 import pandas as pd
+
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Add the project root directory to Python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -30,7 +34,7 @@ def rerun_merging(base_dir, year, color_type='nrg', grid_size=10, min_pixels=20)
     # Process each tile
     for tile_dir in tile_dirs:
         tile_id = os.path.basename(tile_dir)
-        print(f"\nProcessing tile: {tile_id}")
+        logging.info(f"\nProcessing tile: {tile_id}")
         
         # Run merging with new threshold
         merge_overlapping_segments(tile_dir, list(range(1, 5)), year, color_type, grid_size, min_pixels)
@@ -41,11 +45,11 @@ def rerun_merging(base_dir, year, color_type='nrg', grid_size=10, min_pixels=20)
 
 def concat_quarter_polygons(tile_dirs, year, color_type='nrg', grid_size=10):
     """Concatenate polygons for each quarter."""
-    print("\nConcatenating quarter polygons...")
+    logging.info("\nConcatenating quarter polygons...")
     
     # Process each quarter
     for quarter in range(1, 5):
-        print(f"\nProcessing Q{quarter} polygons...")
+        logging.info(f"\nProcessing Q{quarter} polygons...")
         quarter_gdfs = []
         
         # Load polygons from each tile
@@ -61,14 +65,14 @@ def concat_quarter_polygons(tile_dirs, year, color_type='nrg', grid_size=10):
                 try:
                     gdf = gpd.read_parquet(parquet_path)
                     quarter_gdfs.append(gdf)
-                    print(f"Loaded {parquet_path}: {len(gdf)} polygons")
+                    logging.info(f"Loaded {parquet_path}: {len(gdf)} polygons")
                 except Exception as e:
-                    print(f"Error loading {parquet_path}: {str(e)}")
+                    logging.error(f"Error loading {parquet_path}: {str(e)}")
         
         if quarter_gdfs:
             # Combine all polygons for this quarter
             combined_gdf = gpd.GeoDataFrame(pd.concat(quarter_gdfs, ignore_index=True))
-            print(f"\nTotal polygons for Q{quarter}: {len(combined_gdf)}")
+            logging.info(f"\nTotal polygons for Q{quarter}: {len(combined_gdf)}")
             
             # Save combined results
             output_dir = os.path.join(
@@ -79,13 +83,13 @@ def concat_quarter_polygons(tile_dirs, year, color_type='nrg', grid_size=10):
             
             combined_gdf.to_parquet(os.path.join(output_dir, f"Q{quarter}_polygons.parquet"))
             combined_gdf.to_file(os.path.join(output_dir, f"Q{quarter}_polygons.shp"))
-            print(f"Saved Q{quarter} polygons to {output_dir}")
+            logging.info(f"Saved Q{quarter} polygons to {output_dir}")
         else:
-            print(f"No data found for Q{quarter}")
+            logging.info(f"No data found for Q{quarter}")
 
 def concat_intersection_polygons(tile_dirs, color_type='nrg', grid_size=10):
     """Concatenate intersection polygons."""
-    print("\nConcatenating intersection polygons...")
+    logging.info("\nConcatenating intersection polygons...")
     intersection_gdfs = []
     
     # Load intersection polygons from each tile
@@ -101,14 +105,14 @@ def concat_intersection_polygons(tile_dirs, color_type='nrg', grid_size=10):
             try:
                 gdf = gpd.read_parquet(parquet_path)
                 intersection_gdfs.append(gdf)
-                print(f"Loaded {parquet_path}: {len(gdf)} polygons")
+                logging.info(f"Loaded {parquet_path}: {len(gdf)} polygons")
             except Exception as e:
-                print(f"Error loading {parquet_path}: {str(e)}")
+                logging.error(f"Error loading {parquet_path}: {str(e)}")
     
     if intersection_gdfs:
         # Combine all intersection polygons
         combined_gdf = gpd.GeoDataFrame(pd.concat(intersection_gdfs, ignore_index=True))
-        print(f"\nTotal intersection polygons: {len(combined_gdf)}")
+        logging.info(f"\nTotal intersection polygons: {len(combined_gdf)}")
         
         # Save combined results
         output_dir = os.path.join(
@@ -119,9 +123,9 @@ def concat_intersection_polygons(tile_dirs, color_type='nrg', grid_size=10):
         
         combined_gdf.to_parquet(os.path.join(output_dir, "intersection_polygons.parquet"))
         combined_gdf.to_file(os.path.join(output_dir, "intersection_polygons.shp"))
-        print(f"Saved intersection polygons to {output_dir}")
+        logging.info(f"Saved intersection polygons to {output_dir}")
     else:
-        print("No intersection polygons found to merge")
+        logging.info("No intersection polygons found to merge")
 
 def main():
     base_dir = "/home/teulade/dataset_download/shapefiles_copy/"
