@@ -173,7 +173,7 @@ def segment_single_image(input_path: str, output_dir: str, mask_generator: SamAu
         
         # Create shapefile directory specific to this image
         shapefile_dir = os.path.join(output_dir, f"shapefiles_{input_name}")
-        delete_files_in_directory(shapefile_dir, overwrite=True)
+        delete_files_in_directory(shapefile_dir, overwrite=overwrite)
         os.makedirs(shapefile_dir, exist_ok=True)
         
         # Save to GeoDataFrame
