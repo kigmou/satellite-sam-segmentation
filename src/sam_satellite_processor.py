@@ -81,7 +81,7 @@ def get_georeferenced_polygons_from_image(path, mask_generator: SamAutomaticMask
 
 
 
-def segment_satellite_imagery(sentinel_path, mask_generator: SamAutomaticMaskGenerator, color_type='nrg', grid_size=10, n_samples=None, random_seed=42, overwrite=True):
+def segment_satellite_imagery(sentinel_path, mask_generator: SamAutomaticMaskGenerator, color_type='nrg', grid_size=10, n_samples=None, random_seed=42):
     """
     Process a tile using the provided mask generator.
     
@@ -135,7 +135,7 @@ def segment_satellite_imagery(sentinel_path, mask_generator: SamAutomaticMaskGen
     
     # Create output directories
     shapefile_dir = os.path.join(color_dir, f"shapefiles_{grid_size}x{grid_size}")
-    delete_files_in_directory(shapefile_dir, overwrite)
+    delete_files_in_directory(shapefile_dir)
     os.makedirs(shapefile_dir, exist_ok=True)
     
     # Save to Parquet
@@ -146,7 +146,7 @@ def segment_satellite_imagery(sentinel_path, mask_generator: SamAutomaticMaskGen
     output_shapefile = os.path.join(shapefile_dir, f"polygons_{grid_size}x{grid_size}.shp")
     gdf.to_file(output_shapefile, driver='ESRI Shapefile')
 
-def segment_single_image(input_path: str, output_dir: str, mask_generator: SamAutomaticMaskGenerator,  overwrite: bool = True):
+def segment_single_image(input_path: str, output_dir: str, mask_generator: SamAutomaticMaskGenerator):
     """
     Segment a single image and save the results.
     
@@ -170,7 +170,7 @@ def segment_single_image(input_path: str, output_dir: str, mask_generator: SamAu
         
         # Create shapefile directory specific to this image
         shapefile_dir = os.path.join(output_dir, f"shapefiles_{input_name}")
-        delete_files_in_directory(shapefile_dir, overwrite=overwrite)
+        delete_files_in_directory(shapefile_dir)
         os.makedirs(shapefile_dir, exist_ok=True)
         
         # Save to GeoDataFrame

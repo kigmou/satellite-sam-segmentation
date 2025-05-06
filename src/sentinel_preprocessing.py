@@ -21,7 +21,7 @@ def cumulative_count_cut(band, min_percentile=2, max_percentile=98):
     
 # Définir les chemins vers les fichiers de bandes
 
-def build_rgb_from_sentinel(sentinel_path, color_type='nrg',overwrite=True):
+def build_rgb_from_sentinel(sentinel_path, color_type='nrg'):
     """
     Create color composite from Sentinel-2 bands.
     
@@ -32,7 +32,7 @@ def build_rgb_from_sentinel(sentinel_path, color_type='nrg',overwrite=True):
         str: Path to the output TIF
     """
     output_dir = os.path.join(sentinel_path, color_type)
-    delete_files_in_directory(output_dir, overwrite)
+    delete_files_in_directory(output_dir)
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, f'sentinel_composite.tif')
     
@@ -69,7 +69,7 @@ def build_rgb_from_sentinel(sentinel_path, color_type='nrg',overwrite=True):
     
     return output_path
 
-def build_color_from_JP2(jp2_path, color_type='nrg',overwrite=True):
+def build_color_from_JP2(jp2_path, color_type='nrg'):
     """
     Create color composite from Pléiades JP2 file using windows.
     
@@ -80,7 +80,7 @@ def build_color_from_JP2(jp2_path, color_type='nrg',overwrite=True):
         str: Path to output TIF file
     """
     output_dir = os.path.join(os.path.dirname(jp2_path), color_type)
-    delete_files_in_directory(output_dir, overwrite)
+    delete_files_in_directory(output_dir)
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, f'pleiades_composite.tif')
     
@@ -153,7 +153,7 @@ def build_color_from_JP2(jp2_path, color_type='nrg',overwrite=True):
         logging.error(f"Error processing JP2 file: {str(e)}")
         return None
     
-def split_image_in_tiles(input_file, grid_size=10,overwrite=True):
+def split_image_in_tiles(input_file, grid_size=10):
     """
     Split the input image into tiles based on specified grid size.
     
@@ -167,7 +167,7 @@ def split_image_in_tiles(input_file, grid_size=10,overwrite=True):
         
         output_dir = os.path.dirname(input_file)  # Will be in the color_type directory
         tiles_dir = os.path.join(output_dir, f"tiles_{grid_size}x{grid_size}")
-        delete_files_in_directory(tiles_dir, overwrite)
+        delete_files_in_directory(tiles_dir)
         os.makedirs(tiles_dir, exist_ok=True)
 
         # Calculate dimensions for each sub-image
@@ -206,7 +206,7 @@ def split_image_in_tiles(input_file, grid_size=10,overwrite=True):
     logging.info(f"Splitting complete. Sub-images are saved in: {tiles_dir}")
 
 
-def preprocess_imagery(input_path, color_type='nrg', overwrite=True):
+def preprocess_imagery(input_path, color_type='nrg'):
     """
     Generic preprocessing function for both Sentinel-2 and Pléiades imagery.
     
@@ -218,12 +218,12 @@ def preprocess_imagery(input_path, color_type='nrg', overwrite=True):
     
     try:
         if input_path.endswith('.JP2'):
-            composite_path = build_color_from_JP2(input_path, color_type, overwrite=overwrite)
+            composite_path = build_color_from_JP2(input_path, color_type)
         else:
-            composite_path = build_rgb_from_sentinel(input_path, color_type, overwrite=overwrite)
+            composite_path = build_rgb_from_sentinel(input_path, color_type)
 
         logging.info(f"Finish color composite build")
-        split_image_in_tiles(composite_path,overwrite=overwrite)
+        split_image_in_tiles(composite_path)
         logging.info(f"Successfully processed {input_path}")
         
     except Exception as e:
