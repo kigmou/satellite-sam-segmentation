@@ -154,7 +154,6 @@ def process_sentinel_products(base_dir, year, n_samples=None, overwrite=False):
         tile_start_time = time.time()
         tile_id = os.path.basename(tile_dir)
         
-        print("\n")
         logging.info(f"Processing {(tile_dirs)} tiles...")
         
         # Process each quarter
@@ -167,7 +166,6 @@ def process_sentinel_products(base_dir, year, n_samples=None, overwrite=False):
                 logging.info(f"Quarter {quarter} not found for tile {tile_id}, skipping...")
                 continue
                 
-            print("\n")
             logging.info(f"Processing quarter {quarter}")
             
             # Step 1: Preprocess
@@ -189,7 +187,6 @@ def process_sentinel_products(base_dir, year, n_samples=None, overwrite=False):
             logging.info(f"SAM segmentation step completed in {time.time() - step_start_time:.2f} seconds")
             logging.info(f"Quarter {quarter} processing completed in {time.time() - quarter_start_time:.2f} seconds")
         
-        print("\n")
 
         # Step 3: Merge polygons for this tile (all quarters)
         step_start_time = time.time()
@@ -203,13 +200,11 @@ def process_sentinel_products(base_dir, year, n_samples=None, overwrite=False):
     
     # Final step: Concatenate all polygons
     concat_start_time = time.time()
-    print("\n")
     logging.info("Concatenating all polygons...")
     concat_polygons(tile_dirs)
     logging.info(f"Polygon concatenation completed in {time.time() - concat_start_time:.2f} seconds")
     
     total_time = time.time() - total_start_time
-    print("\n")
     logging.info(f"Total processing completed in {total_time:.2f} seconds ({total_time/3600:.2f} hours)")
 
 def parse_args():
