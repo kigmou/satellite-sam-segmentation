@@ -191,7 +191,6 @@ def concat_polygons(tile_paths, color_type='nrg', grid_size=10, polygons_name="a
         
         # Create output directory in the same location as the input tiles
         output_dir = os.path.join(
-            os.path.dirname(tile_paths[0]),  # Use the parent directory of the first tile
             f"{polygons_name}_{color_type}_{grid_size}x{grid_size}"
         )
         delete_files_in_directory(output_dir) 
