@@ -21,7 +21,7 @@ def cumulative_count_cut(band, min_percentile=2, max_percentile=98):
     
 # Définir les chemins vers les fichiers de bandes
 
-def build_rgb_from_sentinel(sentinel_path, color_type='nrg',overwrite=False):
+def build_rgb_from_sentinel(sentinel_path, color_type='nrg',overwrite=True):
     """
     Create color composite from Sentinel-2 bands.
     
@@ -69,7 +69,7 @@ def build_rgb_from_sentinel(sentinel_path, color_type='nrg',overwrite=False):
     
     return output_path
 
-def build_color_from_JP2(jp2_path, color_type='nrg',overwrite=False):
+def build_color_from_JP2(jp2_path, color_type='nrg',overwrite=True):
     """
     Create color composite from Pléiades JP2 file using windows.
     
@@ -153,7 +153,7 @@ def build_color_from_JP2(jp2_path, color_type='nrg',overwrite=False):
         logging.error(f"Error processing JP2 file: {str(e)}")
         return None
     
-def split_image_in_tiles(input_file, grid_size=10,overwrite=False):
+def split_image_in_tiles(input_file, grid_size=10,overwrite=True):
     """
     Split the input image into tiles based on specified grid size.
     
@@ -206,7 +206,7 @@ def split_image_in_tiles(input_file, grid_size=10,overwrite=False):
     logging.info(f"Splitting complete. Sub-images are saved in: {tiles_dir}")
 
 
-def preprocess_imagery(input_path, color_type='nrg', overwrite=False):
+def preprocess_imagery(input_path, color_type='nrg', overwrite=True):
     """
     Generic preprocessing function for both Sentinel-2 and Pléiades imagery.
     

@@ -81,7 +81,7 @@ def get_georeferenced_polygons_from_image(path, mask_generator: SamAutomaticMask
 
 
 
-def segment_satellite_imagery(sentinel_path, mask_generator: SamAutomaticMaskGenerator, color_type='nrg', grid_size=10, n_samples=None, random_seed=42, overwrite=False):
+def segment_satellite_imagery(sentinel_path, mask_generator: SamAutomaticMaskGenerator, color_type='nrg', grid_size=10, n_samples=None, random_seed=42, overwrite=True):
     """
     Process a tile using the provided mask generator.
     
@@ -146,7 +146,7 @@ def segment_satellite_imagery(sentinel_path, mask_generator: SamAutomaticMaskGen
     output_shapefile = os.path.join(shapefile_dir, f"polygons_{grid_size}x{grid_size}.shp")
     gdf.to_file(output_shapefile, driver='ESRI Shapefile')
 
-def segment_single_image(input_path: str, output_dir: str, mask_generator: SamAutomaticMaskGenerator,  overwrite: bool = False):
+def segment_single_image(input_path: str, output_dir: str, mask_generator: SamAutomaticMaskGenerator,  overwrite: bool = True):
     """
     Segment a single image and save the results.
     
