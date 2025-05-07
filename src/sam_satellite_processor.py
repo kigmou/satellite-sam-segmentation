@@ -8,6 +8,7 @@ import logging
 import geopandas as gpd
 from tqdm import tqdm
 
+from src.polygon_merger import delete_files_in_directory
 
 from segment_anything import SamAutomaticMaskGenerator
 from shapely.geometry import Polygon
@@ -134,6 +135,7 @@ def segment_satellite_imagery(sentinel_path, mask_generator: SamAutomaticMaskGen
     
     # Create output directories
     shapefile_dir = os.path.join(color_dir, f"shapefiles_{grid_size}x{grid_size}")
+    delete_files_in_directory(shapefile_dir)
     os.makedirs(shapefile_dir, exist_ok=True)
     
     # Save to Parquet
@@ -168,6 +170,7 @@ def segment_single_image(input_path: str, output_dir: str, mask_generator: SamAu
         
         # Create shapefile directory specific to this image
         shapefile_dir = os.path.join(output_dir, f"shapefiles_{input_name}")
+        delete_files_in_directory(shapefile_dir)
         os.makedirs(shapefile_dir, exist_ok=True)
         
         # Save to GeoDataFrame

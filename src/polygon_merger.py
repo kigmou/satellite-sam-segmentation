@@ -6,9 +6,15 @@ from tqdm import tqdm
 import os
 import logging
 from shapely.validation import make_valid  # Add this import
+import shutil
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+def delete_files_in_directory(directory):
+    """Supprime les fichiers dans un dossier """
+    if os.path.exists(directory):
+        logging.info(f"Deleting files in {directory} ...")
+        shutil.rmtree(directory)
 
 def get_pixel_area(tile_path, quarters, year):
     # Get pixel area from any available quarter's B02.tif
@@ -185,9 +191,9 @@ def concat_polygons(tile_paths, color_type='nrg', grid_size=10, polygons_name="a
         
         # Create output directory in the same location as the input tiles
         output_dir = os.path.join(
-            os.path.dirname(tile_paths[0]),  # Use the parent directory of the first tile
             f"{polygons_name}_{color_type}_{grid_size}x{grid_size}"
         )
+        delete_files_in_directory(output_dir) 
         os.makedirs(output_dir, exist_ok=True)
         
         # Save combined results
