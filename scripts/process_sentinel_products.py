@@ -143,7 +143,7 @@ def process_sentinel_products(base_dir, year, n_samples=None, overwrite=False):
     logging.info(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Starting Sentinel products processing...")
     
     # Get all tile directories
-    tile_dirs = [d for d in glob.glob(os.path.join(base_dir, "*")) if os.path.isdir(d) and os.path.basename(d) != "all_polygons_nrg_10x10"]
+    tile_dirs = [d for d in glob.glob(os.path.join(base_dir, "*")) if os.path.isdir(d)]
 
     # Setup SAM model
     model_start_time = time.time()
