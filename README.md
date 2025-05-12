@@ -63,6 +63,8 @@ python scripts/process_sentinel_products.py
 - `--overwrite`: Boolean flag to overwrite existing files and directories.
 - `--sam_path`: Path to the SAM model checkpoint file.
 - `--year`: Year corresponding to the tiles being processed.
+- `--not_into_console` : Boolean flag to not show logs in console.
+- `--in_file` : Boolean flag to write logs in file.
 
 The script will:
 1. Unzip all Sentinel product zip files
