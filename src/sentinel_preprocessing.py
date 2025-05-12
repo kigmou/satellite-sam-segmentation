@@ -5,6 +5,7 @@ from segment_anything import SamPredictor, sam_model_registry
 import os
 from tqdm import tqdm
 import logging
+from src.polygon_merger import delete_files_in_directory
 
 
 logger = logging.getLogger("logger")
@@ -30,6 +31,7 @@ def build_rgb_from_sentinel(sentinel_path, color_type='nrg'):
         str: Path to the output TIF
     """
     output_dir = os.path.join(sentinel_path, color_type)
+    delete_files_in_directory(output_dir)
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, f'sentinel_composite.tif')
     
@@ -77,6 +79,7 @@ def build_color_from_JP2(jp2_path, color_type='nrg'):
         str: Path to output TIF file
     """
     output_dir = os.path.join(os.path.dirname(jp2_path), color_type)
+    delete_files_in_directory(output_dir)
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, f'pleiades_composite.tif')
     
@@ -163,6 +166,7 @@ def split_image_in_tiles(input_file, grid_size=10):
         
         output_dir = os.path.dirname(input_file)  # Will be in the color_type directory
         tiles_dir = os.path.join(output_dir, f"tiles_{grid_size}x{grid_size}")
+        delete_files_in_directory(tiles_dir)
         os.makedirs(tiles_dir, exist_ok=True)
 
         # Calculate dimensions for each sub-image

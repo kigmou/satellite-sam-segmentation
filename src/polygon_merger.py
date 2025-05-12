@@ -6,8 +6,16 @@ from tqdm import tqdm
 import os
 import logging
 from shapely.validation import make_valid  # Add this import
+import shutil
 
 logger = logging.getLogger("logger")
+
+def delete_files_in_directory(directory):
+    """Supprime les fichiers dans un dossier """
+    if os.path.exists(directory):
+        logging.info(f"Deleting files in {directory} ...")
+        shutil.rmtree(directory)
+
 def get_pixel_area(tile_path, quarters, year):
     # Get pixel area from any available quarter's B02.tif
     pixel_area = None
@@ -153,7 +161,7 @@ def merge_overlapping_segments(tile_path, quarters, year, color_type='nrg', grid
     intersection_gdf = create_intersection_gdf(filtered_gdf)
     
     # Create merge directory in color-specific folder
-    merge_path = os.path.join(tile_path, color_type, "intersection_polygons")
+    merge_path = os.path.join(tile_path, "intersection_polygons")
     os.makedirs(merge_path, exist_ok=True)
     
     intersection_gdf.to_file(os.path.join(merge_path, f"{tile_id}_intersection.shp"))
@@ -164,7 +172,6 @@ def concat_polygons(tile_paths, color_type='nrg', grid_size=10, polygons_name="a
     for tile_path in tqdm(tile_paths, desc="Loading tiles"):
         parquet_path = os.path.join(
             tile_path, 
-            color_type,
             "intersection_polygons", 
             f"{os.path.basename(tile_path)}_intersection.parquet"
         )
@@ -184,9 +191,9 @@ def concat_polygons(tile_paths, color_type='nrg', grid_size=10, polygons_name="a
         
         # Create output directory in the same location as the input tiles
         output_dir = os.path.join(
-            os.path.dirname(tile_paths[0]),  # Use the parent directory of the first tile
             f"{polygons_name}_{color_type}_{grid_size}x{grid_size}"
         )
+        delete_files_in_directory(output_dir) 
         os.makedirs(output_dir, exist_ok=True)
         
         # Save combined results

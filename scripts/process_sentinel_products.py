@@ -16,14 +16,6 @@ from src.logger import configure_logger
 logger = configure_logger()
 
 
-# Add local SAM to Python path
-sam_path = "/home/teulade/segment-anything"
-if sam_path not in sys.path:
-    sys.path.insert(0, sam_path)
-
-
-
-
 def unzip_sentinel_products(base_dir):
     """Unzip all Sentinel product zip files in the given directory."""
     start_time = time.time()
@@ -76,6 +68,7 @@ def unzip_sentinel_products(base_dir):
     
     logger.info(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Unzip process completed in {time.time() - start_time:.2f} seconds")
 
+
 def is_preprocessing_done(quarter_dir):
     """Check if preprocessing has already been done."""
     # Check for color composite and tiles
@@ -123,7 +116,7 @@ def setup_sam_model():
     
     return mask_generator
 
-def process_sentinel_products(base_dir, year, n_samples=None):
+def process_sentinel_products(base_dir, year, n_samples=None, overwrite=False):
     """Process all Sentinel products in the given directory."""
     total_start_time = time.time()
     logger.info(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Starting Sentinel products processing...")
@@ -139,7 +132,8 @@ def process_sentinel_products(base_dir, year, n_samples=None):
     for tile_dir in tile_dirs:
         tile_start_time = time.time()
         tile_id = os.path.basename(tile_dir)
-        logger.info(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Processing tile: {tile_id}")
+        
+        logging.info(f"Processing {(tile_dirs)} tiles...")
         
         # Process each quarter
         for quarter in range(1, 5):
@@ -151,12 +145,12 @@ def process_sentinel_products(base_dir, year, n_samples=None):
                 logger.info(f"Quarter {quarter} not found for tile {tile_id}, skipping...")
                 continue
                 
-            logger.info(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Processing quarter {quarter}")
+            logging.info(f"Processing quarter {quarter}")
             
             # Step 1: Preprocess
             step_start_time = time.time()
-            if is_preprocessing_done(quarter_dir):
-                logger.info("Step 1: Preprocessing already done, skipping...")
+            if not overwrite and is_preprocessing_done(quarter_dir):
+                logging.info("Step 1: Preprocessing already done, skipping...")
             else:
                 logger.info("Step 1: Preprocessing imagery...")
                 preprocess_imagery(quarter_dir)
@@ -164,20 +158,19 @@ def process_sentinel_products(base_dir, year, n_samples=None):
             
             # Step 2: SAM Segmentation
             step_start_time = time.time()
-            if is_sam_done(quarter_dir):
-                logger.info("Step 2: SAM segmentation already done, skipping...")
+            if not overwrite and is_sam_done(quarter_dir):
+                logging.info("Step 2: SAM segmentation already done, skipping...")
             else:
                 logger.info("Step 2: Running SAM segmentation...")
                 segment_satellite_imagery(quarter_dir, mask_generator, n_samples=n_samples, random_seed=sum(map(ord, tile_id)))
             logger.info(f"SAM segmentation step completed in {time.time() - step_start_time:.2f} seconds")
             logger.info(f"Quarter {quarter} processing completed in {time.time() - quarter_start_time:.2f} seconds")
         
-        logger.info("")
 
         # Step 3: Merge polygons for this tile (all quarters)
         step_start_time = time.time()
-        if is_merging_done(tile_dir, quarter):
-            logger.info("Step 3: Polygon merging already done for this tile, skipping...")
+        if not overwrite and is_merging_done(tile_dir, quarter):
+            logging.info("Step 3: Polygon merging already done for this tile, skipping...")
         else:
             logger.info("Step 3: Merging polygons for all quarters...")
             merge_overlapping_segments(tile_dir, list(range(1, 5)), year)
@@ -186,17 +179,18 @@ def process_sentinel_products(base_dir, year, n_samples=None):
     
     # Final step: Concatenate all polygons
     concat_start_time = time.time()
-    logger.info("\nConcatenating all polygons...")
+    logging.info("Concatenating all polygons...")
     concat_polygons(tile_dirs)
     logger.info(f"Polygon concatenation completed in {time.time() - concat_start_time:.2f} seconds")
     
     total_time = time.time() - total_start_time
-    logger.info(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Total processing completed in {total_time:.2f} seconds ({total_time/3600:.2f} hours)")
+    logging.info(f"Total processing completed in {total_time:.2f} seconds ({total_time/3600:.2f} hours)")
 
 def parse_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="Process Sentinel products")
     parser.add_argument("--base_dir", type=str, required=True, help="Path to the base directory with Tiles")
+    parser.add_argument("--overwrite", action="store_true", help="Overwrite existing files")
     parser.add_argument("--sam_path", type=str, default="models/sam_vit_h_4b8939.pth", help="Path to the SAM model directory")
     parser.add_argument("--year", type=int, help="Year of the Sentinel data (e.g., 2023)")
     parser.add_argument("--on_console", help="boolean to enable console logging", action="store_true")
@@ -208,24 +202,6 @@ if __name__ == "__main__":
     logger.info(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Script started")
     
     args = parse_args()
-
-    log_filename = datetime.strftime(datetime.now(), 'logs/logs_%Y%m%d.log')
-    logger = configure_logger(is_file=args.on_file, is_console=args.on_console)
-
-    try:
-        from src.sentinel_preprocessing import preprocess_imagery
-        from src.sam_satellite_processor import segment_satellite_imagery
-        from src.polygon_merger import merge_overlapping_segments, concat_polygons
-        from segment_anything import sam_model_registry, SamAutomaticMaskGenerator
-    except ImportError as e:
-        logger.error(f"Error importing required modules: {e}")
-        logger.error(f"Current Python path: {sys.path}")
-        logger.error(f"Project root: {project_root}")
-        logger.error("\nPlease make sure you have:")
-        logger.error("1. Installed all requirements from requirements.txt")
-        logger.error("2. The project structure is correct with a 'src' directory containing the required modules")
-        logger.error("3. You're running the script from the project root directory")
-        sys.exit(1)
 
 
     if not os.path.isdir(args.base_dir):
@@ -248,7 +224,7 @@ if __name__ == "__main__":
     unzip_sentinel_products(args.base_dir)
     
     # Then process all products with n_samples=10
-    process_sentinel_products(args.base_dir, args.year, n_samples=10)
+    process_sentinel_products(args.base_dir, args.year, n_samples=10,overwrite=args.overwrite)
     
     total_script_time = time.time() - script_start_time
-    logger.info(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Script completed in {total_script_time:.2f} seconds ({total_script_time/3600:.2f} hours)") 
+    logger.info(f" Script completed in {total_script_time:.2f} seconds ({total_script_time/3600:.2f} hours)") 
