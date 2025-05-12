@@ -125,7 +125,7 @@ def setup_sam_model():
 
     mask_generator = SamAutomaticMaskGenerator(
         model=sam,
-        points_per_side=10,
+        points_per_side=64,
         points_per_batch=192,
         pred_iou_thresh=0.6,
         stability_score_thresh=0.6,
