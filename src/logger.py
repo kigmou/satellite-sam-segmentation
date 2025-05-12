@@ -1,15 +1,11 @@
 import logging
-from tqdm import tqdm
-import time
 import sys
 import os
 from datetime import datetime
 
 os.makedirs('logs', exist_ok=True)
 
-
-
-def configure_logger(name="logger", is_file=False, is_console=False):
+def configure_logger(name="logger", is_file=False, not_into_console=False):
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
 
@@ -22,7 +18,7 @@ def configure_logger(name="logger", is_file=False, is_console=False):
             file_handler.setFormatter(formatter)
             logger.addHandler(file_handler)
 
-        if is_console:
+        if not not_into_console:
             console_handler = logging.StreamHandler(sys.stdout)
             console_handler.setLevel(logging.INFO)
             formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')

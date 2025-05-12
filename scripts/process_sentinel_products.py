@@ -13,8 +13,11 @@ project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, project_root)
 
 from src.logger import configure_logger
-logger = configure_logger()
 
+from src.sentinel_preprocessing import preprocess_imagery
+from src.sam_satellite_processor import segment_satellite_imagery
+from src.polygon_merger import merge_overlapping_segments, concat_polygons
+from segment_anything import sam_model_registry, SamAutomaticMaskGenerator
 
 def unzip_sentinel_products(base_dir):
     """Unzip all Sentinel product zip files in the given directory."""
@@ -193,16 +196,17 @@ def parse_args():
     parser.add_argument("--overwrite", action="store_true", help="Overwrite existing files")
     parser.add_argument("--sam_path", type=str, default="models/sam_vit_h_4b8939.pth", help="Path to the SAM model directory")
     parser.add_argument("--year", type=int, help="Year of the Sentinel data (e.g., 2023)")
-    parser.add_argument("--on_console", help="boolean to enable console logging", action="store_true")
-    parser.add_argument("--on_file", help="boolean to enable file logging", action="store_true")
+    parser.add_argument("--not_into_console", help="boolean to enable console logging", action="store_true")
+    parser.add_argument("--in_file", help="boolean to enable file logging", action="store_true")
     
     return parser.parse_args()
 if __name__ == "__main__":
     script_start_time = time.time()
-    logger.info(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Script started")
-    
-    args = parse_args()
 
+    args = parse_args()
+    logger = configure_logger(is_file=args.in_file, not_into_console=args.not_into_console)
+
+    logger.info(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Script started")
 
     if not os.path.isdir(args.base_dir):
         logger.error(f"The provided base directory does not exist or is not a directory: {args.base_dir}")
