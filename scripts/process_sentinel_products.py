@@ -22,21 +22,7 @@ if sam_path not in sys.path:
     sys.path.insert(0, sam_path)
 
 
-try:
-    from src.sentinel_preprocessing import preprocess_imagery
-    from src.sam_satellite_processor import segment_satellite_imagery
-    from src.polygon_merger import merge_overlapping_segments, concat_polygons
-    from segment_anything import sam_model_registry, SamAutomaticMaskGenerator
 
-except ImportError as e:
-    logger.error(f"Error importing required modules: {e}")
-    logger.error(f"Current Python path: {sys.path}")
-    logger.error(f"Project root: {project_root}")
-    logger.error("\nPlease make sure you have:")
-    logger.error("1. Installed all requirements from requirements.txt")
-    logger.error("2. The project structure is correct with a 'src' directory containing the required modules")
-    logger.error("3. You're running the script from the project root directory")
-    sys.exit(1)
 
 def unzip_sentinel_products(base_dir):
     """Unzip all Sentinel product zip files in the given directory."""
@@ -225,6 +211,22 @@ if __name__ == "__main__":
 
     log_filename = datetime.strftime(datetime.now(), 'logs/logs_%Y%m%d.log')
     logger = configure_logger(is_file=args.on_file, is_console=args.on_console)
+
+    try:
+        from src.sentinel_preprocessing import preprocess_imagery
+        from src.sam_satellite_processor import segment_satellite_imagery
+        from src.polygon_merger import merge_overlapping_segments, concat_polygons
+        from segment_anything import sam_model_registry, SamAutomaticMaskGenerator
+    except ImportError as e:
+        logger.error(f"Error importing required modules: {e}")
+        logger.error(f"Current Python path: {sys.path}")
+        logger.error(f"Project root: {project_root}")
+        logger.error("\nPlease make sure you have:")
+        logger.error("1. Installed all requirements from requirements.txt")
+        logger.error("2. The project structure is correct with a 'src' directory containing the required modules")
+        logger.error("3. You're running the script from the project root directory")
+        sys.exit(1)
+
 
     if not os.path.isdir(args.base_dir):
         logger.error(f"The provided base directory does not exist or is not a directory: {args.base_dir}")
