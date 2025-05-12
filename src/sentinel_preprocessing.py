@@ -5,7 +5,6 @@ from segment_anything import SamPredictor, sam_model_registry
 import os
 from tqdm import tqdm
 import logging
-import sys
 
 
 logger = logging.getLogger("logger")
@@ -174,7 +173,7 @@ def split_image_in_tiles(input_file, grid_size=10):
         logger.info(f"\nSplitting image into {total_tiles} tiles ({grid_size}x{grid_size} grid)")
         
         # Loop through each quadrant with progress bar
-        with tqdm(total=total_tiles, desc="Splitting image", unit="tile", file=sys.stdout) as pbar:
+        with tqdm(total=total_tiles, desc="Splitting image", unit="tile") as pbar:
             for row in range(grid_size):
                 for col in range(grid_size):
                     # Calculate coordinates for each window

@@ -2,7 +2,6 @@ import rasterio
 import numpy as np
 import cv2
 import os
-import sys
 import torch
 import logging
 import geopandas as gpd
@@ -116,7 +115,7 @@ def segment_satellite_imagery(sentinel_path, mask_generator: SamAutomaticMaskGen
     georeferenced_polygons = []
     
     # Process selected quadrants
-    with tqdm(total=len(selected_quadrants), desc=f"Processing {color_dir}", unit="quadrant", file= sys.stdout) as pbar:
+    with tqdm(total=len(selected_quadrants), desc=f"Processing {color_dir}", unit="quadrant") as pbar:
         for row, col in selected_quadrants:
             path = os.path.join(color_dir, f"tiles_{grid_size}x{grid_size}", f"tile_{row}_{col}.tif")
             if os.path.exists(path):

@@ -4,7 +4,6 @@ from shapely.geometry import Polygon
 import rasterio
 from tqdm import tqdm
 import os
-import sys
 import logging
 from shapely.validation import make_valid  # Add this import
 
@@ -45,7 +44,7 @@ def create_intersection_gdf(filtered_gdf):
     count_skipped = 0
     
     # Process polygons
-    for i, row in tqdm(enumerate(filtered_gdf.iterrows()), total=len(filtered_gdf), desc="Processing Polygons", file=sys.stdout):
+    for i, row in tqdm(enumerate(filtered_gdf.iterrows()), total=len(filtered_gdf), desc="Processing Polygons"):
         # Skip already processed polygons:
         if i in processed_indices:
             count_skipped += 1
