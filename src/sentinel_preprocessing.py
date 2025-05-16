@@ -174,7 +174,7 @@ def split_image_in_tiles(input_file, grid_size=10):
         tile_height = height // grid_size
 
         total_tiles = grid_size * grid_size
-        logger.info(f"\nSplitting image into {total_tiles} tiles ({grid_size}x{grid_size} grid)")
+        logger.info(f"Splitting image into {total_tiles} tiles ({grid_size}x{grid_size} grid)")
         
         # Loop through each quadrant with progress bar
         with tqdm(total=total_tiles, desc="Splitting image", unit="tile") as pbar:

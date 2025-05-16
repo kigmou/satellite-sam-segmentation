@@ -67,7 +67,7 @@ def unzip_sentinel_products(base_dir):
         logger.info("The following files failed to unzip:")
         for failed_file in failed_files:
             logger.error(f"- {failed_file}")
-        logger.info("\nYou may want to check these files and re-download them if necessary.")
+        logger.info("You may want to check these files and re-download them if necessary.")
     
     logger.info(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Unzip process completed in {time.time() - start_time:.2f} seconds")
 
@@ -192,19 +192,18 @@ def process_sentinel_products(base_dir, year, n_samples=None, overwrite=False):
 def parse_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="Process Sentinel products")
-    parser.add_argument("--base_dir", type=str, required=True, help="Path to the base directory with Tiles")
+    parser.add_argument("--base-dir", type=str, required=True, help="Path to the base directory with Tiles")
     parser.add_argument("--overwrite", action="store_true", help="Overwrite existing files")
-    parser.add_argument("--sam_path", type=str, default="models/sam_vit_h_4b8939.pth", help="Path to the SAM model directory")
+    parser.add_argument("--sam-path", type=str, default="models/sam_vit_h_4b8939.pth", help="Path to the SAM model directory")
     parser.add_argument("--year", type=int, help="Year of the Sentinel data (e.g., 2023)")
-    parser.add_argument("--not_into_console", help="boolean to enable console logging", action="store_true")
-    parser.add_argument("--in_file", help="boolean to enable file logging", action="store_true")
+    parser.add_argument("--in-file", help="boolean to enable file logging", action="store_true")
     
     return parser.parse_args()
 if __name__ == "__main__":
     script_start_time = time.time()
 
     args = parse_args()
-    logger = configure_logger(is_file=args.in_file, not_into_console=args.not_into_console)
+    logger = configure_logger(is_file=args.in_file)
 
     logger.info(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Script started")
 

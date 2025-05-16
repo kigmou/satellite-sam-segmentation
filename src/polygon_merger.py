@@ -99,7 +99,7 @@ def create_intersection_gdf(filtered_gdf):
     )
     
     # Print statistics
-    logger.info(f"\nStatistics:")
+    logger.info(f"Statistics:")
     logger.info(f"- Polygons without significant intersection: {count_no_intersection}")
     logger.info(f"- Polygons reduced to intersection (>25%): {count_intersection}")
     logger.info(f"- Skipped polygons (already processed): {count_skipped}")
@@ -120,7 +120,7 @@ def merge_overlapping_segments(tile_path, quarters, year, color_type='nrg', grid
         min_pixels: Minimum number of pixels for a segment to be kept (default: 100)
     """
     tile_id = os.path.basename(tile_path)
-    logger.info(f"\nProcessing tile {tile_id} for quarters: {quarters}")
+    logger.info(f"Processing tile {tile_id} for quarters: {quarters}")
     pixel_area = get_pixel_area(tile_path, quarters, year)
     
     if pixel_area is None:
@@ -187,7 +187,7 @@ def concat_polygons(tile_paths, color_type='nrg', grid_size=10, polygons_name="a
 
     if gdfs:
         combined_gdf = gpd.GeoDataFrame(pd.concat(gdfs, ignore_index=True))
-        logger.info(f"\nTotal number of polygons: {len(combined_gdf)}")
+        logger.info(f"Total number of polygons: {len(combined_gdf)}")
         
         # Create output directory in the same location as the input tiles
         output_dir = os.path.join(
@@ -200,6 +200,6 @@ def concat_polygons(tile_paths, color_type='nrg', grid_size=10, polygons_name="a
         combined_gdf.to_parquet(os.path.join(output_dir, f"{polygons_name}.parquet"))
         combined_gdf.to_file(os.path.join(output_dir, f"{polygons_name}.shp"))
         
-        logger.info(f"\nSaved merged files to {output_dir}")
+        logger.info(f"Saved merged files to {output_dir}")
     else:
         logger.info("No data found to merge")
