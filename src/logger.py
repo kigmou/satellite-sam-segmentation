@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 
 
-def configure_logger(name="logger", is_file=False, not_into_console=False):
+def configure_logger(name="logger", is_file=False):
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
 
