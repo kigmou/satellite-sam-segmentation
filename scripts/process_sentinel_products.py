@@ -19,7 +19,7 @@ from src.sam_satellite_processor import segment_satellite_imagery
 from src.polygon_merger import merge_overlapping_segments, concat_polygons
 from segment_anything import sam_model_registry, SamAutomaticMaskGenerator
 
-def unzip_sentinel_products(base_dir):
+def unzip_sentinel_products(base_dir, logger):
     """Unzip all Sentinel product zip files in the given directory."""
     start_time = time.time()
     logger.info(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Starting unzip process...")
@@ -106,7 +106,7 @@ def setup_sam_model(sam_config):
     sam.to(device=device)
 
     mask_generator = SamAutomaticMaskGenerator(
-        model=sam,
+        model = sam,
         points_per_side=sam_config.get("points_per_side"),
         points_per_batch=sam_config.get("points_per_batch"),
         pred_iou_thresh=sam_config.get("pred_iou_thresh"),
@@ -119,7 +119,7 @@ def setup_sam_model(sam_config):
     
     return mask_generator
 
-def process_sentinel_products(base_dir, year, n_samples=None, overwrite=False, sam_config=None):
+def process_sentinel_products(base_dir, year,logger, n_samples=None, overwrite=False, sam_config=None):
     """Process all Sentinel products in the given directory."""
     total_start_time = time.time()
     logger.info(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Starting Sentinel products processing...")
@@ -130,14 +130,14 @@ def process_sentinel_products(base_dir, year, n_samples=None, overwrite=False, s
     # Setup SAM model
     model_start_time = time.time()
     mask_generator = setup_sam_model(sam_config)
-    logging.info(f"SAM model setup completed in {time.time() - model_start_time:.2f} seconds")
+    logger.info(f"SAM model setup completed in {time.time() - model_start_time:.2f} seconds")
 
     
     for tile_dir in tile_dirs:
         tile_start_time = time.time()
         tile_id = os.path.basename(tile_dir)
         
-        logging.info(f"Processing {(tile_dirs)} tiles...")
+        logger.info(f"Processing {(tile_dirs)} tiles...")
         
         # Process each quarter
         for quarter in range(1, 5):
@@ -149,12 +149,12 @@ def process_sentinel_products(base_dir, year, n_samples=None, overwrite=False, s
                 logger.info(f"Quarter {quarter} not found for tile {tile_id}, skipping...")
                 continue
                 
-            logging.info(f"Processing quarter {quarter}")
+            logger.info(f"Processing quarter {quarter}")
             
             # Step 1: Preprocess
             step_start_time = time.time()
             if not overwrite and is_preprocessing_done(quarter_dir):
-                logging.info("Step 1: Preprocessing already done, skipping...")
+                logger.info("Step 1: Preprocessing already done, skipping...")
             else:
                 logger.info("Step 1: Preprocessing imagery...")
                 preprocess_imagery(quarter_dir)
@@ -163,7 +163,7 @@ def process_sentinel_products(base_dir, year, n_samples=None, overwrite=False, s
             # Step 2: SAM Segmentation
             step_start_time = time.time()
             if not overwrite and is_sam_done(quarter_dir):
-                logging.info("Step 2: SAM segmentation already done, skipping...")
+                logger.info("Step 2: SAM segmentation already done, skipping...")
             else:
                 logger.info("Step 2: Running SAM segmentation...")
                 segment_satellite_imagery(quarter_dir, mask_generator, n_samples=n_samples, random_seed=sum(map(ord, tile_id)))
@@ -174,7 +174,7 @@ def process_sentinel_products(base_dir, year, n_samples=None, overwrite=False, s
         # Step 3: Merge polygons for this tile (all quarters)
         step_start_time = time.time()
         if not overwrite and is_merging_done(tile_dir, quarter):
-            logging.info("Step 3: Polygon merging already done for this tile, skipping...")
+            logger.info("Step 3: Polygon merging already done for this tile, skipping...")
         else:
             logger.info("Step 3: Merging polygons for all quarters...")
             merge_overlapping_segments(tile_dir, list(range(1, 5)), year)
@@ -183,51 +183,54 @@ def process_sentinel_products(base_dir, year, n_samples=None, overwrite=False, s
     
     # Final step: Concatenate all polygons
     concat_start_time = time.time()
-    logging.info("Concatenating all polygons...")
+    logger.info("Concatenating all polygons...")
     concat_polygons(tile_dirs)
     logger.info(f"Polygon concatenation completed in {time.time() - concat_start_time:.2f} seconds")
     
     total_time = time.time() - total_start_time
-    logging.info(f"Total processing completed in {total_time:.2f} seconds ({total_time/3600:.2f} hours)")
+    logger.info(f"Total processing completed in {total_time:.2f} seconds ({total_time/3600:.2f} hours)")
 
 
  
 @hydra.main(config_path="../conf", config_name="config",version_base=None)
 def main(cfg : dict):
     script_start_time = time.time()
-    logging.info(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Script started")
+    logger.info(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Script started")
     
-    # Convert base_dir to string if it's not already
-    if not isinstance(cfg.base_dir, str):
-        cfg.base_dir = str(cfg.base_dir)
+    if "base-dir" not in cfg or not cfg["base-dir"]:
+        logger.error("base_dir is mandatory and must be defined.")
+        sys.exit(1)
 
-    if not cfg.base_dir or not os.path.isdir(cfg.base_dir):
-        logging.error("base_dir is mandatory and must be defined.")
-        
-    logger = configure_logger(is_file=args.in_file)
+    base_dir = str(cfg["base-dir"])
+
+    if not os.path.isdir(base_dir):
+        logger.error(f"Provided base_dir '{base_dir}' is not a valid directory.")
+        sys.exit(1)
+
+    logger = configure_logger(in_file=cfg["in-file"])
 
     logger.info(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Script started")
 
-    if not cfg.year:
+    if not cfg["year"]:
         try:
-            cfg.year = int(os.path.basename(cfg.base_dir))
+            cfg["year"] = int(os.path.basename(cfg["base-dir"]))
         except ValueError:
             logger.error("Year not provided and could not be inferred from base_dir. Please provide a valid year.")
             sys.exit(1)
 
     # Add local SAM to Python path
-    sam_path = cfg.sam_path
+    sam_path = cfg["sam-model-path"]
     if sam_path not in sys.path:
         sys.path.insert(0, sam_path)
 
     # First unzip all products (if needed)
-    unzip_sentinel_products(cfg.base_dir)
+    unzip_sentinel_products(base_dir, logger)
     
     # Then process all products with n_samples=10
-    process_sentinel_products(cfg.base_dir, cfg.year, n_samples=10, overwrite=cfg.overwrite, sam_config=cfg.sam)
-    
+    process_sentinel_products(base_dir, cfg["year"], logger, n_samples=10, overwrite=cfg["overwrite"], sam_config=cfg["sam"])
+
     total_script_time = time.time() - script_start_time
-    logging.info(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Script completed in {total_script_time:.2f} seconds ({total_script_time/3600:.2f} hours)")
+    logger.info(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Script completed in {total_script_time:.2f} seconds ({total_script_time/3600:.2f} hours)")
 
 if __name__ == "__main__":
     main()

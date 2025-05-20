@@ -1,6 +1,7 @@
-base_dir: ${hydra:runtime.cwd}/data
+base-dir: ${hydra:runtime.cwd}/data
 overwrite: false
-sam_path: ".models/sam_vit_h_4b8939.pth"
+sam-model-path: ".models/sam_vit_h_4b8939.pth"
+in-file: false
 year: 2023
 sam:
   model: "sam"
