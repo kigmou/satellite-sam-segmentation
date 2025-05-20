@@ -54,17 +54,31 @@ The project provides scripts to process Sentinel satellite imagery:
 2. Run the processing script:
 
 ```bash
-python scripts/process_sentinel_products.py
+python scripts/process_sentinel_products.py base_dir="your_path_to_data"
 ```
 
-#### Key Arguments
+### Key Arguments
 
-- `--base_dir`: Path to the directory containing the tiles.
-- `--overwrite`: Boolean flag to overwrite existing files and directories.
-- `--sam_path`: Path to the SAM model checkpoint file.
-- `--year`: Year corresponding to the tiles being processed.
+| Argument                     | Description                                                               | Default                          |
+|------------------------------|---------------------------------------------------------------------------|----------------------------------|
+| `base_dir`                   | Path to the directory containing the Sentinel product zip files.          | *Required*                       |
+| `overwrite`                  | Boolean flag to overwrite existing files and directories.                 | `false`                          |
+| `sam_path`                   | Path to the SAM model checkpoint file.                                    | `"models/sam_vit_h_4b8939.pth"`  |
+| `year`                       | Year corresponding to the tiles being processed.                          | `2023`                           |
+| `not_into_console`           | Boolean flag to disable logging in the console.                           | `false`                          |
+| `in_file`                    | Boolean flag to enable logging to a file.                                 | `false`                          |
+| `sam.model`                  | Model name used by SAM.                                                   | `"sam"`                          |
+| `sam.points_per_side`        | Number of points sampled per image side.                                  | `64`                             |
+| `sam.points_per_batch`       | Number of points processed per batch.                                     | `192`                            |
+| `sam.pred_iou_thresh`        | Prediction IoU threshold for mask filtering.                              | `0.6`                            |
+| `sam.stability_score_thresh` | Threshold for the stability score.                                        | `0.6`                            |
+| `sam.crop_nms_thresh`        | NMS threshold for cropping.                                               | `0`                              |
+| `sam.crop_overlap_ratio`     | Overlap ratio between crops.                                              | `1`                              |
+| `sam.crop_n_layers`          | Number of cropping layers.                                                | `1`                              |
+| `sam.min_mask_region_area`   | Minimum area of a mask region to be considered.                           | `20`                             |
 
 The script will:
+
 1. Unzip all Sentinel product zip files
 2. Preprocess the imagery
 3. Run SAM segmentation
@@ -240,7 +254,14 @@ CUDA out of memory. Tried to allocate 1024.00 MiB. GPU 0 has a total capacity of
 
 #### Reduce the workload:
 
-You can decrease the point per side parameters on SAM (Segment Anything Model) to reduce the memory usage. By decreasing the input size, the model will require less memory to process.
+
+You can **reduce the memory usage** of the SAM (Segment Anything Model) by decreasing the `points_per_side` parameter. Lowering this value reduces the number of input points, which in turn decreases the memory required for processing.
+
+To change this parameter, simply add it as an override in your command:
+
+```bash
+python ./scripts/process_sentinel_products.py base_dir="2023" sam.points_per_side=32
+```
 
 ## License
 
