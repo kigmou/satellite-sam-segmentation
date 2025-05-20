@@ -194,6 +194,8 @@ def process_sentinel_products(base_dir, year,logger, n_samples=None, overwrite=F
  
 @hydra.main(config_path="../conf", config_name="config",version_base=None)
 def main(cfg : dict):
+    logger = configure_logger(in_file=cfg["in-file"])
+
     script_start_time = time.time()
     logger.info(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Script started")
     
@@ -207,7 +209,6 @@ def main(cfg : dict):
         logger.error(f"Provided base_dir '{base_dir}' is not a valid directory.")
         sys.exit(1)
 
-    logger = configure_logger(in_file=cfg["in-file"])
 
     logger.info(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Script started")
 

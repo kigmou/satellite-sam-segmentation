@@ -63,7 +63,7 @@ python scripts/process_sentinel_products.py base-dir="your_path_to_data"
 |------------------------------|---------------------------------------------------------------------------|----------------------------------|
 | `base-dir`                   | Path to the directory containing the Sentinel product zip files.          | *Required*                       |
 | `overwrite`                  | Boolean flag to overwrite existing files and directories.                 | `false`                          |
-| `sam-path`                   | Path to the SAM model checkpoint file.                                    | `"models/sam_vit_h_4b8939.pth"`  |
+| `sam-model-path`             | Path to the SAM model checkpoint file.                                    | `"models/sam_vit_h_4b8939.pth"`  |
 | `year`                       | Year corresponding to the tiles being processed.                          | `2023`                           |
 | `in-file`                    | Boolean flag to enable logging to a file.                                 | `false`                          |
 | `sam.model`                  | Model name used by SAM.                                                   | `"sam"`                          |
