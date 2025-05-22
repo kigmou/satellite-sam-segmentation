@@ -119,7 +119,7 @@ def setup_sam_model(sam_config):
     
     return mask_generator
 
-def process_sentinel_products(base_dir, year,logger, n_samples=None, overwrite=False, sam_config=None):
+def process_sentinel_products(base_dir, year,logger, sam_config, n_samples=None, overwrite=False):
     """Process all Sentinel products in the given directory."""
     total_start_time = time.time()
     logger.info(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Starting Sentinel products processing...")
