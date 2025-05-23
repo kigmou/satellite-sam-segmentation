@@ -107,19 +107,12 @@ def setup_sam_model(sam_config):
 
     mask_generator = SamAutomaticMaskGenerator(
         model = sam,
-        points_per_side=sam_config.get("points_per_side"),
-        points_per_batch=sam_config.get("points_per_batch"),
-        pred_iou_thresh=sam_config.get("pred_iou_thresh"),
-        stability_score_thresh=sam_config.get("stability_score_thresh"),
-        crop_nms_thresh=sam_config.get("crop_nms_thresh"),
-        crop_overlap_ratio=sam_config.get("crop_overlap_ratio"),
-        crop_n_layers=sam_config.get("crop_n_layers"),
-        min_mask_region_area=sam_config.get("min_mask_region_area")
+        **sam_config,
     )
     
     return mask_generator
 
-def process_sentinel_products(base_dir, year,logger, sam_config, n_samples=None, overwrite=False):
+def process_sentinel_products(base_dir, year, logger, sam_config, n_samples=None, overwrite=False):
     """Process all Sentinel products in the given directory."""
     total_start_time = time.time()
     logger.info(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Starting Sentinel products processing...")
@@ -192,7 +185,7 @@ def process_sentinel_products(base_dir, year,logger, sam_config, n_samples=None,
 
 
  
-@hydra.main(config_path="../conf", config_name="config",version_base=None)
+@hydra.main(config_path="../conf", config_name="config")
 def main(cfg : dict):
     logger = configure_logger(in_file=cfg["in-file"])
 
@@ -219,17 +212,12 @@ def main(cfg : dict):
             logger.error("Year not provided and could not be inferred from base_dir. Please provide a valid year.")
             sys.exit(1)
 
-    # Add local SAM to Python path
-    sam_path = cfg["sam-model-path"]
-    if sam_path not in sys.path:
-        sys.path.insert(0, sam_path)
-
     # First unzip all products (if needed)
     unzip_sentinel_products(base_dir, logger)
     
     # Then process all products with n_samples=10
-    process_sentinel_products(base_dir, cfg["year"], logger, n_samples=10, overwrite=cfg["overwrite"], sam_config=cfg["sam"])
-
+    process_sentinel_products(base_dir, cfg["year"], logger, cfg["sam"], n_samples=10, overwrite=cfg["overwrite"])
+    
     total_script_time = time.time() - script_start_time
     logger.info(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Script completed in {total_script_time:.2f} seconds ({total_script_time/3600:.2f} hours)")
 
